@@ -3,6 +3,7 @@ package com.example.verifit;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -12,7 +13,7 @@ import android.widget.Toast;
 import android.os.Process;
 import java.util.Date;
 
-public class WebdavBackupService extends Service {
+public class BackupService extends Service {
     private Looper serviceLooper;
     private ServiceHandler serviceHandler;
 
@@ -32,6 +33,7 @@ public class WebdavBackupService extends Service {
                 {
                     String autowebdavbackup = loadSharedPreferences("autowebdavbackup");
                     String togglewebdav = loadSharedPreferences("togglewebdav");
+                    String autobackup = loadSharedPreferences("autobackup");
                     Date now = new Date();
 
 
@@ -43,13 +45,20 @@ public class WebdavBackupService extends Service {
                     System.out.println("MainActivity.inAddExerciseActivity = " + MainActivity.inAddExerciseActivity);
 
 
-                    // Automatic webdav backup is on and a new workout is saved
+                    // Automatic webdav export
                     if(autowebdavbackup.equals("true") && togglewebdav.equals("true") && MainActivity.autoBackupRequired && !MainActivity.inAddExerciseActivity &&  !webdavurl.equals("") && !webdavusername.equals("") && !webdavpassword.equals(""))
                     {
-                        System.out.println("Exporting silently in the background");
+                        System.out.println("Webdav Exporting silently in the background");
                         MainActivity.exportWebDavService(getApplicationContext(), webdavurl, webdavusername, webdavpassword);
                         MainActivity.autoBackupRequired = false;
                     }
+
+//                    // Automatic local storage export
+//                    if(autobackup.equals("true") && MainActivity.autoBackupRequired && !MainActivity.inAddExerciseActivity)
+//                    {
+//                        System.out.println("Local Storage Exporting silently in the background");
+//                    }
+
                     // Check if we should backup every 10 min
                     Thread.sleep(1000*60*10);
                 }
@@ -81,7 +90,7 @@ public class WebdavBackupService extends Service {
         HandlerThread thread = new HandlerThread("ServiceStartArguments", Process.THREAD_PRIORITY_BACKGROUND);
         thread.start();
 
-        Toast.makeText(this, "Backup Service started", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Backup Service started", Toast.LENGTH_SHORT).show();
 
 
         // Get the HandlerThread's Looper and use it for our Handler
@@ -111,6 +120,6 @@ public class WebdavBackupService extends Service {
 
     @Override
     public void onDestroy() {
-        Toast.makeText(this, "Backup Service stopped", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Backup Service stopped", Toast.LENGTH_SHORT).show();
     }
 }
