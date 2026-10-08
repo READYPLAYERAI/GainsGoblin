@@ -102,17 +102,12 @@ public class SettingsActivity extends AppCompatActivity {
             }
             else if (key.equals("github"))
             {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MakisChristou/verifit"));
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/READYPLAYERAI/verifit-ng"));
                 startActivity(browserIntent);
             }
             else if (key.equals("version"))
             {
                 Toast.makeText(getContext(),"Nothing to see here",Toast.LENGTH_SHORT).show();
-            }
-            else if (key.equals("donate"))
-            {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.paypal.com/donate/?hosted_button_id=YFZX88G8XDSN4"));
-                startActivity(browserIntent);
             }
             else if(key.equals("privacy_policy"))
             {
@@ -122,11 +117,6 @@ public class SettingsActivity extends AppCompatActivity {
                 AlertDialog alertDialog = new AlertDialog.Builder(getContext()).setView(view).create();
 
                 alertDialog.show();
-            }
-            else if(key.equals("reddit"))
-            {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.reddit.com/r/verifitApp/"));
-                startActivity(browserIntent);
             }
             else if (key.equals("licence"))
             {

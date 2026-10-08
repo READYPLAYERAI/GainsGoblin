@@ -45,13 +45,6 @@
 <!--            app:useSimpleSummaryProvider="false" />-->
 
         <Preference
-            app:key="donate"
-            app:summary="If you like this app consider donating"
-            app:title="Donate"
-            app:useSimpleSummaryProvider="false" />
-
-
-        <Preference
             app:key="licence"
             app:summary="GNU General Public Licence, version 3"
             app:title="Licence"
@@ -62,12 +55,6 @@
 <!--            app:summary="Learn more about our privacy policy"-->
 <!--            app:title="Privacy Policy"-->
 <!--            app:useSimpleSummaryProvider="false" />-->
-
-        <Preference
-            app:key="reddit"
-            app:summary="Join our reddit community"
-            app:title="Reddit"
-            app:useSimpleSummaryProvider="false" />
 
 <!--        <Preference-->
 <!--            app:key="contact_us"-->

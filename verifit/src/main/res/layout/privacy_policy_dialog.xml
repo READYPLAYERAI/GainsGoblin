@@ -42,7 +42,7 @@
         android:gravity="center"
         android:isScrollContainer="true"
         android:scrollbars="vertical"
-        android:text="Verifit is a fully offline workout tracker. All workout data is stored locally on your device and never leaves it. Verifit does not collect any personal data and does not connect to any servers. You can export a backup of your data to phone storage at any time. For more details, visit https://github.com/MakisChristou/verifit or contact us at support@verifit.xyz"
+        android:text="Verifit is a fully offline workout tracker. All workout data is stored locally on your device and never leaves it. Verifit does not collect any personal data and does not connect to any servers. You can export a backup of your data to phone storage at any time. For more details, visit https://github.com/READYPLAYERAI/verifit-ng or contact us at support@verifit.xyz"
         android:textColor="@color/core_black"
         android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"
