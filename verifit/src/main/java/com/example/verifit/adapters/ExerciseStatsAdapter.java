@@ -156,7 +156,7 @@ public class ExerciseStatsAdapter extends RecyclerView.Adapter<ExerciseStatsAdap
 
     private void showPopupMenu(ExerciseStatsAdapter.MyViewHolder holder, View view, int position)
     {
-        PopupMenu popupMenu = new PopupMenu(view.getContext(), view, Gravity.NO_GRAVITY, R.attr.actionOverflowMenuStyle, 0);
+        PopupMenu popupMenu = new PopupMenu(view.getContext(), view, Gravity.NO_GRAVITY, androidx.appcompat.R.attr.actionOverflowMenuStyle, 0);
 
         popupMenu.inflate(R.menu.exercise_personal_record_floating_context_menu);
         popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
