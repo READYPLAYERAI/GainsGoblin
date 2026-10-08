@@ -385,7 +385,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         viewPager2 = findViewById(R.id.viewPager2);
         viewPager2.setAdapter(new ViewPagerWorkoutDayAdapter(this, dataStorage.getInfiniteWorkoutDays()));
         viewPager2.setVisibility(View.VISIBLE);
-        viewPager2.setCurrentItem(((dataStorage.getInfiniteWorkoutDays().size()+1)/2)-1); // Navigate to today
+        int today_position = getTodayPosition(); // Navigate to today
+        if (today_position >= 0)
+        {
+            viewPager2.setCurrentItem(today_position);
+        }
 
         viewPager2.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
@@ -398,6 +402,20 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         ProgressBar progressBar = findViewById(R.id.progress_bar);
         progressBar.setVisibility(View.GONE);
+    }
+
+    // Returns the position of today's date within the infinite workout days list, or -1 if not found
+    private int getTodayPosition()
+    {
+        String today_str = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+        for (int i = 0; i < dataStorage.getInfiniteWorkoutDays().size(); i++)
+        {
+            if (dataStorage.getInfiniteWorkoutDays().get(i).getDate().equals(today_str))
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // Formats backup name in case of export
@@ -493,7 +511,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     {
         if(item.getItemId() == R.id.home)
         {
-            viewPager2.setCurrentItem(((dataStorage.getInfiniteWorkoutDays().size()+1)/2)-1); // Navigate to today
+            int today_position = getTodayPosition(); // Navigate to today
+            if (today_position >= 0)
+            {
+                viewPager2.setCurrentItem(today_position);
+            }
         }
         else if(item.getItemId() == R.id.settings)
         {
