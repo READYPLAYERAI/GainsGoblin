@@ -3,7 +3,6 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -13,23 +12,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:usesCleartextTraffic="true" >
-        <activity
-            android:name=".ui.ChangePasswordActivity"
-            android:label="Reset Password"
-            android:parentActivityName=".ui.ForgotPasswordActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.ForgotPasswordActivity"
-            android:exported="false"
-            android:label="Forgot Password"
-            android:parentActivityName=".ui.LoginActivity" />
-        <activity
-            android:name=".ui.LoginActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.SettingsActivity"/>
+        >
 
-        <service android:name=".BackupService" />
         <activity
             android:name=".ui.ChartsActivity"
             android:label="Charts" />

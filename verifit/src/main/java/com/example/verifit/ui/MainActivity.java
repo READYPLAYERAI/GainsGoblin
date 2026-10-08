@@ -6,11 +6,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.DatePickerDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,43 +17,27 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.DatePicker;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
-import com.example.verifit.BackupService;
 import com.example.verifit.DataStorage;
 import com.example.verifit.R;
-import com.example.verifit.SnackBarWithMessage;
-import com.example.verifit.model.WorkoutSet;
 import com.example.verifit.adapters.ViewPagerWorkoutDayAdapter;
-import com.example.verifit.adapters.WebdavAdapter;
 import com.example.verifit.model.WorkoutDay;
-import com.example.verifit.verifitrs.WorkoutSetsApi;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.Format;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener , DatePickerDialog.OnDateSetListener{
 
     public static DataStorage dataStorage = new DataStorage(); // Holds all Verifit data and handles file I/O
     public static String dateSelected; // Used for other activities to get the selected date, by default it's set to today
     public static ViewPager2 viewPager2; // View Pager that is used in main activity
-    public static Boolean autoBackupRequired = false;
-    public static Boolean inAddExerciseActivity = false;
-    public static WebdavAdapter webdavAdapter;
+
     public static final int READ_REQUEST_CODE = 42;
     public static String EXPORT_FILENAME = "verifit_backup";
 
@@ -78,59 +59,14 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             }
         });
 
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-
-        // No need for backup, not adding exercises
-        if(!doesSharedPreferenceExist("autoBackupRequired"))
-        {
-            sharedPreferences.save("false", "autoBackupRequired");
-        }
-
-        if(!doesSharedPreferenceExist("inAddExerciseActivity"))
-        {
-            sharedPreferences.save("false", "inAddExerciseActivity");
-        }
-
         // Hacky way to have the same code run in onRestart() as well
         onCreateStuff();
-    }
-
-    public Boolean doesSharedPreferenceExist(String key)
-    {
-        SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("shared preferences", MODE_PRIVATE);
-
-        if(sharedPreferences.contains(key))
-        {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isMyServiceRunning(Class<?> serviceClass)
-    {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
-        {
-            if (serviceClass.getName().equals(service.service.getClassName()))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     // General Initialization Stuff
     public void onCreateStuff()
     {
         initActivity();
-
-        // If backup background service has not started, start it
-        if(!isMyServiceRunning(BackupService.class))
-        {
-            // Start background service
-            Intent intent = new Intent(this, BackupService.class);
-            startService(intent);
-        }
 
         // Bottom Navigation Bar Intents
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation_view);
@@ -183,8 +119,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         String whatToDo = in.getStringExtra("doit");
 
-        String message = in.getStringExtra("message");
-
         // If Intent coming from settings activity
         if(whatToDo != null)
         {
@@ -203,124 +137,17 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                 // Or else nothing comes up
                 initViewPager();
             }
-            else if(whatToDo.equals("exportwebdav"))
-            {
-                // After Loading Data Initialize ViewPager
-                initViewPager();
-            }
-            // Data already saved, just init view pager
-            else if(whatToDo.equals("importwebdav"))
-            {
-                // After Loading Data Initialize ViewPager
-                initViewPager();
-            }
+
         }
         // No intent
         else
         {
-            // Offline / Webdav Mode
-            com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-
-            if(sharedPreferences.isOfflineMode())
-            {
-                sharedPreferences.save("offline", "mode");
-                dataStorage.loadWorkoutData(getApplicationContext());
-                dataStorage.loadKnownExercisesData(getApplicationContext());
-                initViewPager();
-            }
-            // Caching: Update screen with local data
-            else if(dataStorage.getWorkoutDays().size() > 0 && sharedPreferences.shouldUseCache())
-            {
-                initViewPager();
-            }
-            // Fetch data from Rest API and then update screen
-            else
-            {
-                // Cloud Mode
-                WorkoutSetsApi workoutSetsApi = new WorkoutSetsApi(getApplicationContext(), getString(R.string.API_ENDPOINT));
-                workoutSetsApi.getAllWorkoutSets(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-
-                        sharedPreferences.enableOfflineMode();
-
-                        // Show error
-                        runOnUiThread(() -> {
-                            initViewPager();
-                            SnackBarWithMessage snackBarWithMessage = new SnackBarWithMessage(MainActivity.this);
-                            snackBarWithMessage.showSnackbar("Can't connect to server");
-                        });
-                    }
-
-                    @Override
-                    public void onResponse(Call call, okhttp3.Response response) throws IOException
-                    {
-                        if (200 == response.code())
-                        {
-                            String jsonString = response.body().string();
-                            Gson gson = new Gson();
-                            Type listType = new TypeToken<ArrayList<WorkoutSet>>() {}.getType();
-                            ArrayList<WorkoutSet> sets = gson.fromJson(jsonString, listType);
-
-                            MainActivity.dataStorage.readFromSets(sets, getApplicationContext());
-
-                            // Data loaded successfully, enable caching from now on
-                            sharedPreferences.enableCaching();
-
-                            runOnUiThread(() -> {
-                                initViewPager();
-                            });
-                        }
-                        else
-                        {
-                            // If logged out login again
-                            if(response.message().equals("Unauthorized"))
-                            {
-                                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                                startActivity(intent);
-                            }
-                            else if(response.message().equals("Bad Gateway"))
-                            {
-                                sharedPreferences.enableOfflineMode();
-                                runOnUiThread(() -> {
-                                    initViewPager();
-                                });
-                            }
-                            else
-                            {
-                                sharedPreferences.enableOfflineMode();
-                            }
-
-                            runOnUiThread(() -> {
-                                SnackBarWithMessage snackBarWithMessage = new SnackBarWithMessage(MainActivity.this);
-                                snackBarWithMessage.showSnackbar(response.message().toString());
-                            });
-                        }
-                    }
-                });
-            }
+            // Offline mode: load local data
+            dataStorage.loadWorkoutData(getApplicationContext());
+            dataStorage.loadKnownExercisesData(getApplicationContext());
+            initViewPager();
         }
-        // Display login/logout messages
-        if(message != null)
-        {
-            if(message.equals("verifit_rs_login"))
-            {
-                SnackBarWithMessage snackBarWithMessage = new SnackBarWithMessage(MainActivity.this);
-                snackBarWithMessage.showSnackbar("Welcome back");
-            }
-            else if(message.equals("verifit_rs_logout"))
-            {
-                SnackBarWithMessage snackBarWithMessage = new SnackBarWithMessage(MainActivity.this);
-                snackBarWithMessage.showSnackbar("Logged out");
-            }
-            else if(message.equals("verifit_rs_signup"))
-            {
-                com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-                String email = sharedPreferences.load("verifit_rs_username");
-                SnackBarWithMessage snackBarWithMessage = new SnackBarWithMessage(MainActivity.this);
-                snackBarWithMessage.showSnackbar("Account created for " + email);
-            }
-        }
+
     }
 
 

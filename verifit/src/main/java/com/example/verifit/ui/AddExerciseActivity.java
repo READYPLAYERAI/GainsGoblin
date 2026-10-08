@@ -1,7 +1,6 @@
 package com.example.verifit.ui;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,7 +14,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.drawable.ColorDrawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.LayoutInflater;
@@ -23,20 +21,17 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.verifit.KeyboardHider;
-import com.example.verifit.LoadingDialog;
 import com.example.verifit.MonthXAxisFormatter;
 import com.example.verifit.SnackBarWithMessage;
 import com.example.verifit.adapters.AddExerciseWorkoutSetAdapter;
@@ -45,7 +40,6 @@ import com.example.verifit.R;
 import com.example.verifit.model.WorkoutDay;
 import com.example.verifit.model.WorkoutExercise;
 import com.example.verifit.model.WorkoutSet;
-import com.example.verifit.verifitrs.WorkoutSetsApi;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Legend;
@@ -55,23 +49,14 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.Response;
 
 public class AddExerciseActivity extends AppCompatActivity {
 
@@ -137,21 +122,6 @@ public class AddExerciseActivity extends AppCompatActivity {
         // Self Explanatory I guess
         initrecyclerView();
 
-        // User can modify data structures, possible race condition, thus temporary disable autobackup
-        MainActivity.inAddExerciseActivity = true;
-
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-        sharedPreferences.save("true", "inAddExerciseActivity");
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // User can modify data structures, possible race condition, thus temporary disable autobackup
-        MainActivity.inAddExerciseActivity = true;
-
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-        sharedPreferences.save("true", "inAddExerciseActivity");
     }
 
     // Save / Update
@@ -159,12 +129,6 @@ public class AddExerciseActivity extends AppCompatActivity {
     {
         KeyboardHider keyboardHider = new KeyboardHider(AddExerciseActivity.this);
         keyboardHider.hideKeyboard();
-
-        // Let backup service know that something has changed
-        MainActivity.autoBackupRequired = true;
-
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-        sharedPreferences.save("true", "autoBackupRequired");
 
         // Save Functionality
         if(!isEditMode)
@@ -218,85 +182,12 @@ public class AddExerciseActivity extends AppCompatActivity {
                         }
 
 
-                        // Offline
-                        if(sharedPreferences.isOfflineMode())
-                        {
-                            addSetExistingWorkoutDay(workoutSet, position);
-                        }
-                        else
-                        {
-                            final LoadingDialog loadingDialog = new LoadingDialog(AddExerciseActivity.this);
-                            loadingDialog.loadingAlertDialog();
-
-                            WorkoutSetsApi workoutSetsApi = new WorkoutSetsApi(getApplicationContext(), getString(R.string.API_ENDPOINT));
-                            workoutSetsApi.postWorkoutSet(workoutSet, new Callback() {
-                                @Override
-                                public void onFailure(Call call, IOException e) {
-                                    loadingDialog.dismissDialog();
-                                    showSnackbarMessage(e.toString());
-                                }
-
-                                @Override
-                                public void onResponse(Call call, okhttp3.Response response) throws IOException {
-
-                                    loadingDialog.dismissDialog();
-
-                                    if (200 == response.code())
-                                    {
-                                        Integer set_id = getSetIdFromResponse(response);
-                                        workoutSet.setId(set_id);
-                                        addSetExistingWorkoutDay(workoutSet, position);
-                                    }
-                                    else
-                                    {
-                                        showSnackbarMessage(response.message().toString());
-                                    }
-                                }
-                            });
-                        }
+                        addSetExistingWorkoutDay(workoutSet, position);
                     }
                     // If not construct new workout day
                     else
                     {
-                        // Offline
-                        if(sharedPreferences.isOfflineMode())
-                        {
-                            addSetNewWorkoutDay(workoutSet);
-                        }
-                        else
-                        {
-                            final LoadingDialog loadingDialog = new LoadingDialog(AddExerciseActivity.this);
-                            loadingDialog.loadingAlertDialog();
-
-                            WorkoutSetsApi workoutSetsApi = new WorkoutSetsApi(getApplicationContext(), getString(R.string.API_ENDPOINT));
-                            workoutSetsApi.postWorkoutSet(workoutSet, new Callback() {
-                                @Override
-                                public void onFailure(Call call, IOException e) {
-                                    // Show error
-                                    loadingDialog.dismissDialog();
-                                    showSnackbarMessage(e.toString());
-                                }
-
-                                @Override
-                                public void onResponse(Call call, okhttp3.Response response) throws IOException {
-
-                                    loadingDialog.dismissDialog();
-
-                                    if (200 == response.code())
-                                    {
-                                        Integer set_id = getSetIdFromResponse(response);
-                                        workoutSet.setId(set_id);
-                                        addSetNewWorkoutDay(workoutSet);
-                                    }
-                                    else
-                                    {
-                                        runOnUiThread(()->{
-                                            showSnackbarMessage(response.message());
-                                        });
-                                    }
-                                }
-                            });
-                        }
+                        addSetNewWorkoutDay(workoutSet);
                     }
                 }
             }
@@ -325,49 +216,7 @@ public class AddExerciseActivity extends AppCompatActivity {
                         Double reps = Double.parseDouble(String.valueOf(et_reps.getText()));
                         Double weight = Double.parseDouble(String.valueOf(et_weight.getText()));
 
-                        // Create temp set
-                        WorkoutSet set = new WorkoutSet();
-                        set.setComment(to_be_updated_set.getComment());
-                        set.setExerciseName(to_be_updated_set.getExerciseName());
-                        set.setCategory(to_be_updated_set.getCategory());
-                        set.setId(to_be_updated_set.getId());
-                        set.setReps(reps);
-                        set.setWeight(weight);
-
-                        if(sharedPreferences.isOfflineMode())
-                        {
-                            updateSet(finalI, finalJ, reps, weight);
-                        }
-                        else
-                        {
-                            final LoadingDialog loadingDialog = new LoadingDialog(AddExerciseActivity.this);
-                            loadingDialog.loadingAlertDialog();
-
-                            WorkoutSetsApi workoutSetsApi = new WorkoutSetsApi(getApplicationContext(), getString(R.string.API_ENDPOINT));
-                            workoutSetsApi.updateWorkoutSet(set, new Callback() {
-                                @Override
-                                public void onFailure(Call call, IOException e)
-                                {
-                                    loadingDialog.dismissDialog();
-                                    showSnackbarMessage(e.toString());
-                                }
-
-                                @Override
-                                public void onResponse(Call call, okhttp3.Response response) throws IOException {
-
-                                    loadingDialog.dismissDialog();
-
-                                    if (200 == response.code())
-                                    {
-                                        updateSet(finalI, finalJ, reps, weight);
-                                    }
-                                    else
-                                    {
-                                        showSnackbarMessage(response.message().toString());
-                                    }
-                                }
-                            });
-                        }
+                        updateSet(finalI, finalJ, reps, weight);
                         break;
                     }
                 }
@@ -428,15 +277,7 @@ public class AddExerciseActivity extends AppCompatActivity {
         });
     }
 
-    public Integer getSetIdFromResponse(okhttp3.Response response) throws IOException
-    {
-        String jsonString = response.body().string();
-        Gson gson = new Gson();
-        Type listType = new TypeToken<Integer>() {}.getType();
-        Integer set_id = gson.fromJson(jsonString, listType);
 
-        return  set_id;
-    }
 
     // Clear
     public void clickClear(View view)
@@ -448,11 +289,6 @@ public class AddExerciseActivity extends AppCompatActivity {
 
     public static void deleteSet(Context ct)
     {
-        // Let backup service know that something has changed
-        MainActivity.autoBackupRequired = true;
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(ct);
-        sharedPreferences.save("true", "autoBackupRequired");
-
         // Show confirmation dialog  box
         // Prepare to show exercise dialog box
         LayoutInflater inflater = LayoutInflater.from(ct);
@@ -488,49 +324,8 @@ public class AddExerciseActivity extends AppCompatActivity {
                     {
                         final int finalI = i;
 
-                        if(sharedPreferences.isOfflineMode())
-                        {
-                            deleteSetLogic(ct, finalI, to_be_removed_set);
-                            alertDialog.dismiss();
-                        }
-                        else
-                        {
-                            final LoadingDialog loadingDialog = new LoadingDialog((Activity) ct);
-                            loadingDialog.loadingAlertDialog();
-
-                            WorkoutSetsApi workoutSetsApi = new WorkoutSetsApi(ct, ct.getString(R.string.API_ENDPOINT));
-                            workoutSetsApi.deleteWorkoutSet(to_be_removed_set, new Callback() {
-                                @Override
-                                public void onFailure(Call call, IOException e) {
-                                    // Show error
-                                    ((Activity) ct).runOnUiThread(() -> {
-                                        loadingDialog.dismissDialog();
-                                        alertDialog.dismiss();
-                                        SnackBarWithMessage snackBarWithMessage = new SnackBarWithMessage(((Activity) ct));
-                                        snackBarWithMessage.showSnackbar("Can't connect to server");
-                                    });
-                                }
-
-                                @Override
-                                public void onResponse(Call call, okhttp3.Response response) throws IOException {
-
-                                    loadingDialog.dismissDialog();
-                                    alertDialog.dismiss();
-
-                                    if (200 == response.code())
-                                    {
-                                        deleteSetLogic(ct, finalI, to_be_removed_set);
-                                    }
-                                    else
-                                    {
-                                        ((Activity) ct).runOnUiThread(() -> {
-                                            SnackBarWithMessage snackBarWithMessage = new SnackBarWithMessage(((Activity) ct));
-                                            snackBarWithMessage.showSnackbar(response.message().toString());
-                                        });
-                                    }
-                                }
-                            });
-                        }
+                        deleteSetLogic(ct, finalI, to_be_removed_set);
+                        alertDialog.dismiss();
                         break;
                     }
                 }
@@ -599,12 +394,6 @@ public class AddExerciseActivity extends AppCompatActivity {
 
         // Actually Save Changes in shared preferences
         MainActivity.dataStorage.saveWorkoutData(getApplicationContext());
-
-        // User cannot modify data structures, thus we can let service auto backup without race conditions
-        MainActivity.inAddExerciseActivity = false;
-
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-        sharedPreferences.save("false", "inAddExerciseActivity");
     }
 
     // Do I even need to explain this?
@@ -1376,11 +1165,6 @@ public class AddExerciseActivity extends AppCompatActivity {
         // Makes necessary checks and saves comment
     public void saveComment(AlertDialog alertDialog)
     {
-        // Let backup service know that something has changed
-        MainActivity.autoBackupRequired = true;
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-        sharedPreferences.save("true", "autoBackupRequired");
-
         // Check if exercise exists (cannot comment on non-existant exercise)
         // Find if workout day already exists
         int exercise_position = MainActivity.dataStorage.getExercisePosition(MainActivity.dateSelected,exercise_name);
@@ -1425,43 +1209,8 @@ public class AddExerciseActivity extends AppCompatActivity {
             WorkoutSet set_to_be_updated = MainActivity.dataStorage.getWorkoutDays().get(day_position).getExercises().get(exercise_position).getSets().get(i);
             set_to_be_updated.setComment(comment);
 
-            if(sharedPreferences.isOfflineMode())
-            {
-                updateCommentInSet(day_position, exercise_position, finalI, finalSize, comment);
-                alertDialog.dismiss();
-            }
-            else
-            {
-                final LoadingDialog loadingDialog = new LoadingDialog(AddExerciseActivity.this);
-                loadingDialog.loadingAlertDialog();
-
-                WorkoutSetsApi workoutSetsApi = new WorkoutSetsApi(getApplicationContext(), getString(R.string.API_ENDPOINT));
-                workoutSetsApi.updateWorkoutSet(set_to_be_updated, new Callback() {
-                    @Override
-                    public void onFailure(@NonNull Call call, @NonNull IOException e)
-                    {
-                        loadingDialog.dismissDialog();
-                        alertDialog.dismiss();
-                        showSnackbarMessage(e.toString());
-                    }
-
-                    @Override
-                    public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                        loadingDialog.dismissDialog();
-                        alertDialog.dismiss();
-
-                        if(200 == response.code())
-                        {
-                            updateCommentInSet(day_position, exercise_position, finalI, finalSize, comment);
-
-                        }
-                        else
-                        {
-                            showSnackbarMessage(response.message().toString());
-                        }
-                    }
-                });
-            }
+            updateCommentInSet(day_position, exercise_position, finalI, finalSize, comment);
+            alertDialog.dismiss();
         }
     }
 
@@ -1483,10 +1232,6 @@ public class AddExerciseActivity extends AppCompatActivity {
     // Makes necessary checks and clears comment
     public void clearComment()
     {
-        // Let backup service know that something has changed
-        MainActivity.autoBackupRequired = true;
-        com.example.verifit.SharedPreferences sharedPreferences = new com.example.verifit.SharedPreferences(getApplicationContext());
-        sharedPreferences.save("true", "autoBackupRequired");
         et_exercise_comment.setText("");
     }
 

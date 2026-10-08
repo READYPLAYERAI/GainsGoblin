@@ -1,6 +1,5 @@
 package com.example.verifit.adapters;
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.verifit.R;
 import com.example.verifit.model.WorkoutDay;
 import com.example.verifit.model.WorkoutExercise;
-import com.example.verifit.ui.DayActivity;
-import com.example.verifit.ui.ExercisesActivity;
 import com.example.verifit.ui.MainActivity;
 
 import java.text.DateFormat;

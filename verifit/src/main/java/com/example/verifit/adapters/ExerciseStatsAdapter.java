@@ -164,13 +164,11 @@ public class ExerciseStatsAdapter extends RecyclerView.Adapter<ExerciseStatsAdap
             public boolean onMenuItemClick(MenuItem item)
             {
 
-                // To Do: Edit Remote Webdav Resource
                 if(item.getItemId() == R.id.charts)
                 {
                     System.out.println("Charts Clicked");
                 }
 
-                // Delete Remote Webdav Resource
                 else if(item.getItemId() == R.id.favorite)
                 {
                     System.out.println("Favorite Clicked");
