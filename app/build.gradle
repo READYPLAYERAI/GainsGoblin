@@ -10,8 +10,8 @@ android {
         applicationId "com.readyplayerai.gainsgoblin"
         minSdk 16
         targetSdk 31
-        versionCode 14
-        versionName "1.0.14"
+        versionCode 1
+        versionName "0.01"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
