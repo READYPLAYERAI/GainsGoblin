@@ -18,5 +18,5 @@ dependencyResolutionManagement {
     }
 }
 
-include ':verifit'
-rootProject.name = "Harder Than Last Time"
+include ':app'
+rootProject.name = "Gains Goblin"
