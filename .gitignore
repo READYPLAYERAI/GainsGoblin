@@ -34,3 +34,6 @@ google-services.json
 
 # Android App Bundles
 *.aab
+
+# Local scripts (contain machine-specific paths)
+scripts/
