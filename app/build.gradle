@@ -28,6 +28,26 @@ android {
         }
     }
 
+    // Release signing: loads credentials from ~/keystores/gainsgoblin.properties
+    // (kept outside the repo). Falls back to debug signing so clones without the
+    // keystore can still assemble a release build.
+    def keystorePropsFile = rootProject.file(System.getProperty('user.home') + '/keystores/gainsgoblin.properties')
+    if (keystorePropsFile.exists()) {
+        def keystoreProps = new Properties()
+        keystoreProps.load(new FileInputStream(keystorePropsFile))
+        signingConfigs {
+            release {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+        buildTypes.release.signingConfig = signingConfigs.release
+    } else {
+        buildTypes.release.signingConfig = signingConfigs.debug
+    }
+
     // AGP 9+ runs lintVital on release builds; the ExpiredTargetSdkVersion check
     // (Google Play policy: targetSdk >= 33) fails the build while this app still
     // targets API 31 by design. Disabled until a deliberate targetSdk bump.
