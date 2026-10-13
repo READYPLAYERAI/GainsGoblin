@@ -37,3 +37,6 @@ google-services.json
 
 # Local scripts (contain machine-specific paths)
 scripts/
+
+# Local notes (deferred items, machine-specific references — not part of the repo)
+notes/
