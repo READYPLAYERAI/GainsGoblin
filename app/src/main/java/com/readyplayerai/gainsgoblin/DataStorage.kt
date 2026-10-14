@@ -305,12 +305,8 @@ class DataStorage {
             val gson = Gson()
             val json = sharedPreferences.getString("workouts", null)
             val type: Type = object : TypeToken<ArrayList<WorkoutDay>>() {}.type
-            workoutDays = gson.fromJson(json, type)
-
             // If there are no previously saved entries make a new object
-            if (workoutDays == null) {
-                workoutDays = ArrayList()
-            }
+            workoutDays = gson.fromJson(json, type) ?: ArrayList()
         }
     }
 
@@ -332,10 +328,9 @@ class DataStorage {
             val gson = Gson()
             val json = sharedPreferences.getString("known_exercises", null)
             val type: Type = object : TypeToken<ArrayList<Exercise>>() {}.type
-            knownExercises = gson.fromJson(json, type)
-
             // If there are no previously saved entries make a new object
-            if (knownExercises == null || knownExercises.isEmpty()) {
+            knownExercises = gson.fromJson(json, type) ?: ArrayList()
+            if (knownExercises.isEmpty()) {
                 knownExercises = ArrayList()
                 initKnownExercises()
             }
