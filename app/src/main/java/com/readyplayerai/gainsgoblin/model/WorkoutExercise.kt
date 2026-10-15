@@ -1,8 +1,10 @@
 package com.readyplayerai.gainsgoblin.model
 
+import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmName
 import java.util.ArrayList
 
+@Serializable
 class WorkoutExercise {
     var Sets: ArrayList<WorkoutSet>? = null
     var Date: String? = null

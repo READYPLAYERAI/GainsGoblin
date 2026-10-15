@@ -1,8 +1,10 @@
 package com.readyplayerai.gainsgoblin.model
 
+import kotlinx.serialization.Serializable
 import java.util.TreeSet
 import java.util.ArrayList
 
+@Serializable
 class WorkoutDay {
     var Sets: ArrayList<WorkoutSet>? = ArrayList()
     var Exercises: ArrayList<WorkoutExercise>? = ArrayList()

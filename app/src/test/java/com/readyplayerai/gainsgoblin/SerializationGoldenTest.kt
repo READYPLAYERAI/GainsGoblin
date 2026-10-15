@@ -1,51 +1,65 @@
 package com.readyplayerai.gainsgoblin
 
 import com.readyplayerai.gainsgoblin.model.*
-import com.google.gson.Gson
-import com.google.gson.JsonParser
-import com.google.gson.JsonObject
-import com.google.gson.JsonArray
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.boolean
+
+import kotlinx.serialization.builtins.ListSerializer
 import org.junit.Test
 import org.junit.Assert.*
 
-import java.lang.reflect.Type
 import java.util.ArrayList
 
 class SerializationGoldenTest {
+
+    private val kotlinxJson = Json {
+        explicitNulls = false
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     // ---- WorkoutSet ----
 
     @Test
     fun workoutSet_keySet() {
-        val gson = Gson()
         val set = WorkoutSet("2026-01-01", "Bench", "Chest", 5.0, 80.0, "good")
         set.id = 7
         set.user_id = 9
 
-        val json = gson.toJson(set)
-        val obj = JsonParser.parseString(json).asJsonObject
+        val json = kotlinxJson.encodeToString(set)
+        val obj = kotlinxJson.parseToJsonElement(json).jsonObject
 
         val expected = setOf(
             "id", "date", "exercise_name", "category", "reps", "weight", "comment", "user_id"
         )
-        assertEquals(expected, obj.keySet())
-        assertEquals(7, obj["id"]!!.asInt)
-        assertEquals(9, obj["user_id"]!!.asInt)
+        assertEquals(expected, obj.keys)
+        assertEquals(7, obj["id"]!!.jsonPrimitive.int)
+        assertEquals(9, obj["user_id"]!!.jsonPrimitive.int)
+        assertEquals("2026-01-01", obj["date"]!!.jsonPrimitive.content)
+        assertEquals("Bench", obj["exercise_name"]!!.jsonPrimitive.content)
+        assertEquals("Chest", obj["category"]!!.jsonPrimitive.content)
+        assertEquals(5.0, obj["reps"]!!.jsonPrimitive.double, 0.001)
+        assertEquals(80.0, obj["weight"]!!.jsonPrimitive.double, 0.001)
+        assertEquals("good", obj["comment"]!!.jsonPrimitive.content)
     }
 
     @Test
     fun workoutSet_partialDeserialization() {
-        val gson = Gson()
         val partialJson = "{\"date\":\"2026-01-01\",\"exercise_name\":\"Bench\",\"category\":\"Chest\",\"reps\":5.0,\"weight\":80.0}"
-        val set = gson.fromJson(partialJson, WorkoutSet::class.java)
+        val set = kotlinxJson.decodeFromString<WorkoutSet>(partialJson)
 
         assertEquals("2026-01-01", set.date)
         assertEquals("Bench", set.exerciseName)
         assertEquals("Chest", set.category)
         assertEquals(5.0, set.reps!!, 0.001)
         assertEquals(80.0, set.weight!!, 0.001)
-        // Missing fields: comment null, id 0, user_id 0
+        // Missing fields use their defaults: comment null, id 0, user_id 0
         assertNull(set.comment)
         assertEquals(0, set.id)
         assertEquals(0, set.user_id)
@@ -53,13 +67,12 @@ class SerializationGoldenTest {
 
     @Test
     fun workoutSet_roundTrip() {
-        val gson = Gson()
         val original = WorkoutSet("2026-01-01", "Bench", "Chest", 5.0, 80.0, "good")
         original.id = 7
         original.user_id = 9
 
-        val json = gson.toJson(original)
-        val round = gson.fromJson(json, WorkoutSet::class.java)
+        val json = kotlinxJson.encodeToString(original)
+        val round = kotlinxJson.decodeFromString<WorkoutSet>(json)
 
         assertEquals(original.date, round.date)
         assertEquals(original.exerciseName, round.exerciseName)
@@ -71,41 +84,57 @@ class SerializationGoldenTest {
         assertEquals(original.user_id, round.user_id)
     }
 
+    @Test
+    fun workoutSet_decodesLegacyJson() {
+        // Legacy JSON: null fields omitted (no "comment"),
+        // but id/user_id written even when 0.
+        val legacyJson = "{\"id\":0,\"date\":\"2026-01-02\",\"exercise_name\":\"Squat\",\"category\":\"Legs\",\"reps\":3.0,\"weight\":100.0,\"user_id\":0}"
+        val set = kotlinxJson.decodeFromString<WorkoutSet>(legacyJson)
+
+        assertEquals(0, set.id)
+        assertEquals("2026-01-02", set.date)
+        assertEquals("Squat", set.exerciseName)
+        assertEquals("Legs", set.category)
+        assertEquals(3.0, set.reps!!, 0.001)
+        assertEquals(100.0, set.weight!!, 0.001)
+        assertNull(set.comment)
+        assertEquals(0, set.user_id)
+    }
+
     // ---- Exercise ----
 
     @Test
     fun exercise_keySet() {
-        val gson = Gson()
         val ex = Exercise("Deadlift", "Back")
 
-        val json = gson.toJson(ex)
-        val obj = JsonParser.parseString(json).asJsonObject
+        val json = kotlinxJson.encodeToString(ex)
+        val obj = kotlinxJson.parseToJsonElement(json).jsonObject
 
         val expected = setOf("Name", "BodyPart", "favorite")
-        assertEquals(expected, obj.keySet())
-        assertFalse(obj["favorite"]!!.asBoolean)
+        assertEquals(expected, obj.keys)
+        assertFalse(obj["favorite"]!!.jsonPrimitive.boolean)
     }
 
     @Test
     fun exercise_partialDeserialization() {
-        val gson = Gson()
         // Legacy JSON without "favorite"
         val partialJson = "{\"Name\":\"Deadlift\",\"BodyPart\":\"Back\"}"
-        val ex = gson.fromJson(partialJson, Exercise::class.java)
+        val ex = kotlinxJson.decodeFromString<Exercise>(partialJson)
 
         assertEquals("Deadlift", ex.Name)
         assertEquals("Back", ex.BodyPart)
-        assertNull(ex.favorite)
+        // kotlinx decodes the missing key to the initializer default false.
+        // Production load normalizes null -> false anyway.
+        assertEquals(false, ex.favorite)
     }
 
     @Test
     fun exercise_roundTrip() {
-        val gson = Gson()
         val original = Exercise("Deadlift", "Back")
         original.favorite = true
 
-        val json = gson.toJson(original)
-        val round = gson.fromJson(json, Exercise::class.java)
+        val json = kotlinxJson.encodeToString(original)
+        val round = kotlinxJson.decodeFromString<Exercise>(json)
 
         assertEquals(original.Name, round.Name)
         assertEquals(original.BodyPart, round.BodyPart)
@@ -116,8 +145,6 @@ class SerializationGoldenTest {
 
     @Test
     fun workoutDay_nested_keySets() {
-        val gson = Gson()
-
         val day = WorkoutDay()
         val s1 = WorkoutSet("2026-01-05", "Bench", "Chest", 5.0, 80.0, "good")
         val s2 = WorkoutSet("2026-01-05", "Bench", "Chest", 3.0, 100.0, "")
@@ -139,21 +166,22 @@ class SerializationGoldenTest {
         // Serialize as ArrayList<WorkoutDay>, mirroring production
         val list = ArrayList<WorkoutDay>()
         list.add(day)
-        val json = gson.toJson(list)
+        val listSerializer = ListSerializer(WorkoutDay.serializer())
+        val json = kotlinxJson.encodeToString(listSerializer, list)
 
-        val arr = JsonParser.parseString(json).asJsonArray
-        assertEquals(1, arr.size())
-        val dayObj = arr[0].asJsonObject
+        val arr = kotlinxJson.parseToJsonElement(json).jsonArray
+        assertEquals(1, arr.size)
+        val dayObj = arr[0].jsonObject
 
         // WorkoutDay top-level key set
         val dayExpected = setOf(
             "Exercises", "Sets", "DayVolume", "Date", "Reps"
         )
-        assertEquals(dayExpected, dayObj.keySet())
+        assertEquals(dayExpected, dayObj.keys)
 
         // Nested WorkoutExercise key set
-        val exercises = dayObj["Exercises"]!!.asJsonArray
-        assertEquals(2, exercises.size())
+        val exercises = dayObj["Exercises"]!!.jsonArray
+        assertEquals(2, exercises.size)
 
         val weExpected = setOf(
             "Sets", "Date", "Exercise", "Volume", "EstimatedOneRepMax",
@@ -164,18 +192,53 @@ class SerializationGoldenTest {
         )
 
         for (i in 0 until 2) {
-            val weObj = exercises[i].asJsonObject
-            assertEquals(weExpected, weObj.keySet())
+            val weObj = exercises[i].jsonObject
+            assertEquals(weExpected, weObj.keys)
             // PR booleans we set serialize as true
-            assertTrue(weObj["VolumePR"]!!.asBoolean)
-            assertTrue(weObj["HTLT"]!!.asBoolean)
+            assertTrue(weObj["VolumePR"]!!.jsonPrimitive.boolean)
+            assertTrue(weObj["HTLT"]!!.jsonPrimitive.boolean)
         }
     }
 
     @Test
-    fun workoutDay_roundTrip() {
-        val gson = Gson()
+    fun workoutDay_decodesLegacyJson() {
+        // Legacy JSON from older app version — null fields (Comment where null)
+        // are absent, ActualOneRepMax written since non-null.
+        val legacyJson = """[{"Exercises":[{"Sets":[{"id":0,"date":"2026-01-05","exercise_name":"Bench","category":"Chest","reps":5.0,"weight":80.0,"comment":"good","user_id":0}],"Date":"2026-01-05","Exercise":"Bench","Volume":400.0,"EstimatedOneRepMax":93.33,"ActualOneRepMax":0.0,"MaxWeight":80.0,"MaxReps":5.0,"TotalReps":5.0,"TotalSets":1.0,"MaxSetVolume":400.0,"VolumePR":false,"ActualOneRepMaxPR":false,"EstimatedOneRepMaxPR":false,"MaxRepsPR":false,"MaxWeightPR":false,"HTLT":false,"Comment":"good","maxVolumeSet":{"id":0,"date":"2026-01-05","exercise_name":"Bench","category":"Chest","reps":5.0,"weight":80.0,"comment":"good","user_id":0},"maxRepsSet":{"id":0,"date":"2026-01-05","exercise_name":"Bench","category":"Chest","reps":5.0,"weight":80.0,"comment":"good","user_id":0},"maxWeightSet":{"id":0,"date":"2026-01-05","exercise_name":"Bench","category":"Chest","reps":5.0,"weight":80.0,"comment":"good","user_id":0}}],"Sets":[{"id":0,"date":"2026-01-05","exercise_name":"Bench","category":"Chest","reps":5.0,"weight":80.0,"comment":"good","user_id":0}],"DayVolume":400.0,"Date":"2026-01-05","Reps":5}]"""
 
+        val listSerializer = ListSerializer(WorkoutDay.serializer())
+        val roundList = kotlinxJson.decodeFromString(listSerializer, legacyJson)
+
+        assertEquals(1, roundList.size)
+        val day = roundList[0]
+
+        // Day-level fields
+        assertEquals("2026-01-05", day.Date)
+        assertEquals(400.0, day.DayVolume!!, 0.001)
+        assertEquals(5, day.Reps)
+
+        // One exercise with expected fields
+        assertEquals(1, day.Exercises!!.size)
+        val exercise = day.Exercises!![0]
+        assertEquals("Bench", exercise.Exercise)
+        assertEquals(400.0, exercise.Volume!!, 0.001)
+        assertEquals("good", exercise.Comment)
+
+        // Sets list size 1 with correct values
+        assertEquals(1, day.Sets!!.size)
+        val set = day.Sets!![0]
+        assertEquals("2026-01-05", set.date)
+        assertEquals("Bench", set.exerciseName)
+        assertEquals("Chest", set.category)
+        assertEquals(5.0, set.reps!!, 0.001)
+        assertEquals(80.0, set.weight!!, 0.001)
+        assertEquals("good", set.comment)
+        assertEquals(0, set.id)
+        assertEquals(0, set.user_id)
+    }
+
+    @Test
+    fun workoutDay_roundTrip() {
         val day = WorkoutDay()
         val s1 = WorkoutSet("2026-01-05", "Bench", "Chest", 5.0, 80.0, "good")
         val s2 = WorkoutSet("2026-01-05", "Squat", "Legs", 5.0, 100.0, "")
@@ -185,12 +248,9 @@ class SerializationGoldenTest {
         val originalList = ArrayList<WorkoutDay>()
         originalList.add(day)
 
-        // Serialize using plain Gson (no TypeToken needed for serialization)
-        val json = gson.toJson(originalList)
-
-        // Deserialize using TypeToken, exactly like production's loadWorkoutData
-        val type: Type = object : TypeToken<ArrayList<WorkoutDay>>() {}.type
-        val roundList: ArrayList<WorkoutDay> = gson.fromJson(json, type)
+        val listSerializer = ListSerializer(WorkoutDay.serializer())
+        val jsonStr = kotlinxJson.encodeToString(listSerializer, originalList)
+        val roundList = kotlinxJson.decodeFromString(listSerializer, jsonStr)
 
         assertEquals(1, roundList.size)
         val roundDay = roundList[0]
@@ -214,7 +274,7 @@ class SerializationGoldenTest {
             assertEquals(origSet.comment, roundSet.comment)
         }
 
-        // Compare exercise fields field by field
+        // Compare exercises field by field
         for (i in 0 until day.Exercises!!.size) {
             val origEx = day.Exercises!![i]
             val roundEx = roundDay.Exercises!![i]

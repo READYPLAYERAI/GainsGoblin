@@ -1,10 +1,12 @@
 package com.readyplayerai.gainsgoblin.model
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 class WorkoutSet {
     var date: String? = null
-    @SerializedName("exercise_name") var exerciseName: String? = null
+    @SerialName("exercise_name") var exerciseName: String? = null
     var category: String? = null
     var reps: Double? = null
     var weight: Double? = null

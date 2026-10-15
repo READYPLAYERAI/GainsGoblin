@@ -1,7 +1,8 @@
 package com.readyplayerai.gainsgoblin.model
 
-class Exercise(Name: String?, BodyPart: String?) {
-    var Name: String? = Name
-    var BodyPart: String? = BodyPart
+import kotlinx.serialization.Serializable
+
+@Serializable
+class Exercise(var Name: String?, var BodyPart: String?) {
     var favorite: Boolean? = false
 }

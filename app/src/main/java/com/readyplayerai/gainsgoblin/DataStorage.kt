@@ -18,8 +18,8 @@ import com.readyplayerai.gainsgoblin.model.WorkoutExercise
 import com.readyplayerai.gainsgoblin.model.WorkoutSet
 import com.readyplayerai.gainsgoblin.ui.MainActivity
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.ListSerializer
 import kotlin.collections.MutableList
 
 import java.io.File
@@ -27,7 +27,6 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.lang.reflect.Type
 import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Collections
@@ -38,6 +37,16 @@ import java.util.Iterator
 import java.util.List
 import java.util.Set
 import java.util.TreeSet
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.edit
+
+private val Context.dataStore by preferencesDataStore(name = "gainsgoblin_data")
+private val WORKOUTS_KEY = stringPreferencesKey("workouts")
+private val KNOWN_EXERCISES_KEY = stringPreferencesKey("known_exercises")
 
 // NOTE: Deliberate deviation from Java source:
 // Java had `import static androidx.constraintlayout.motion.utils.Oscillator.TAG`
@@ -46,6 +55,12 @@ import java.util.TreeSet
 class DataStorage {
 
     private val TAG = "DataStorage"
+
+    private val json = Json {
+        explicitNulls = false
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     var days = TreeSet<String>()
     var sets: ArrayList<WorkoutSet> = ArrayList()
@@ -62,6 +77,23 @@ class DataStorage {
     var maxVolumeSetPRs: HashMap<String, WorkoutSet> = HashMap()
     var maxRepsSetPRs: HashMap<String, WorkoutSet> = HashMap()
     var maxWeightSetPRs: HashMap<String, WorkoutSet> = HashMap()
+
+    // Synchronous bridge over DataStore's Flow API; the planned MVVM refactor will replace runBlocking with Flow consumption.
+    private fun readStringWithMigration(context: Context, key: Preferences.Key<String>): String? {
+        val legacy = context.getSharedPreferences("shared preferences", MODE_PRIVATE)
+        return runBlocking {
+            val current = context.dataStore.data.first()[key]
+            if (current != null) {
+                current
+            } else {
+                val legacyValue = legacy.getString(key.name, null)
+                if (legacyValue != null) {
+                    context.dataStore.edit { it[key] = legacyValue }
+                }
+                legacyValue
+            }
+        }
+    }
 
     // Returns index of day
     fun getDayPosition(Date: String?): Int {
@@ -287,49 +319,45 @@ class DataStorage {
         }
     }
 
-    // Saves Workout_Days Array List in shared preferences
+    // Saves Workout_Days Array List in DataStore (migrated from SharedPreferences)
     // For some reason when I pass the context it works so let's roll with it :D
     fun saveWorkoutData(ct: Context) {
-        val sharedPreferences = ct.getSharedPreferences("shared preferences", MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        val gson = Gson()
-        val json = gson.toJson(workoutDays)
-        editor.putString("workouts", json)
-        editor.apply()
-    }
-
-    // Loads Workout_Days Array List from shared preferences
-    fun loadWorkoutData(context: Context) {
-        if (workoutDays.isEmpty()) {
-            val sharedPreferences = context.getSharedPreferences("shared preferences", MODE_PRIVATE)
-            val gson = Gson()
-            val json = sharedPreferences.getString("workouts", null)
-            val type: Type = object : TypeToken<ArrayList<WorkoutDay>>() {}.type
-            // If there are no previously saved entries make a new object
-            workoutDays = gson.fromJson(json, type) ?: ArrayList()
+        val listSerializer = ListSerializer(WorkoutDay.serializer())
+        val jsonStr = json.encodeToString(listSerializer, workoutDays)
+        runBlocking {
+            ct.dataStore.edit { it[WORKOUTS_KEY] = jsonStr }
         }
     }
 
-    // Saves Workout_Days Array List in shared preferences
-    // For some reason when I pass the context it works so let's roll with it :D
-    fun saveKnownExerciseData(ct: Context) {
-        val sharedPreferences = ct.getSharedPreferences("shared preferences", MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        val gson = Gson()
-        val json = gson.toJson(knownExercises)
-        editor.putString("known_exercises", json)
-        editor.apply()
+    // Loads Workout_Days Array List from DataStore (with migration from SharedPreferences)
+    fun loadWorkoutData(context: Context) {
+        if (workoutDays.isEmpty()) {
+            val rawJson = readStringWithMigration(context, WORKOUTS_KEY)
+            val listSerializer = ListSerializer(WorkoutDay.serializer())
+            // If there are no previously saved entries make a new object
+            val decoded = if (rawJson == null) ArrayList() else ArrayList(json.decodeFromString(listSerializer, rawJson))
+            workoutDays = decoded
+        }
     }
 
-    // Loads Workout_Days Array List from shared preferences
+    // Saves known exercises in DataStore (migrated from SharedPreferences)
+    // For some reason when I pass the context it works so let's roll with it :D
+    fun saveKnownExerciseData(ct: Context) {
+        val listSerializer = ListSerializer(Exercise.serializer())
+        val jsonStr = json.encodeToString(listSerializer, knownExercises)
+        runBlocking {
+            ct.dataStore.edit { it[KNOWN_EXERCISES_KEY] = jsonStr }
+        }
+    }
+
+    // Loads known exercises from DataStore (with migration from SharedPreferences)
     fun loadKnownExercisesData(context: Context) {
         if (knownExercises.isEmpty()) {
-            val sharedPreferences = context.getSharedPreferences("shared preferences", MODE_PRIVATE)
-            val gson = Gson()
-            val json = sharedPreferences.getString("known_exercises", null)
-            val type: Type = object : TypeToken<ArrayList<Exercise>>() {}.type
+            val rawJson = readStringWithMigration(context, KNOWN_EXERCISES_KEY)
+            val listSerializer = ListSerializer(Exercise.serializer())
             // If there are no previously saved entries make a new object
-            knownExercises = gson.fromJson(json, type) ?: ArrayList()
+            val decoded = if (rawJson == null) ArrayList() else ArrayList(json.decodeFromString(listSerializer, rawJson))
+            knownExercises = decoded
             if (knownExercises.isEmpty()) {
                 knownExercises = ArrayList()
                 initKnownExercises()
@@ -356,7 +384,7 @@ class DataStorage {
             setsToEverything() // Convert Set Objects to Day Objects
             csvToKnownExercises() // Find all Exercises in CSV and add them to known exercises
             saveKnownExerciseData(context) // Save KnownExercises in CSV
-            saveWorkoutData(context) // Save WorkoutDays in Shared Preferences
+            saveWorkoutData(context) // Save WorkoutDays in DataStore
             return true
         } catch (e: IOException) {
             println(e.message)
