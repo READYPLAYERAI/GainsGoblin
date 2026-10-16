@@ -253,20 +253,21 @@ class DataStorage {
         // Calculate Volume PRs
         for (i in 0 until knownExercises.size) {
             for (j in 0 until workoutDays.size) {
-                for (k in 0 until workoutDays[j].Exercises!!.size) {
-                    if (workoutDays[j].Exercises!![k].Exercise == knownExercises[i].Name) {
+                val exercises = workoutDays[j].Exercises ?: continue
+                for (k in 0 until exercises.size) {
+                    if (exercises[k].Exercise == knownExercises[i].Name) {
                         // Per Exercise Volume Personal Records
-                        if (volumePRs[knownExercises[i].Name!!]!! < workoutDays[j].Exercises!![k].Volume!!) {
-                            workoutDays[j].Exercises!![k].VolumePR = true
-                            volumePRs[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].Volume!!
+                        if (volumePRs[knownExercises[i].Name!!]!! < exercises[k].Volume ?: 0.0) {
+                            exercises[k].VolumePR = true
+                            volumePRs[knownExercises[i].Name!!] = exercises[k].Volume ?: 0.0
                         }
 
                         val setVolume = setVolumePRs[knownExercises[i].Name!!]!!.first * setVolumePRs[knownExercises[i].Name!!]!!.second
 
                         // Per Set Volume Personal Records
-                        if (setVolume < workoutDays[j].Exercises!![k].MaxSetVolume!!) {
-                            val maxReps = workoutDays[j].Exercises!![k].MaxReps!!
-                            val maxWeight = workoutDays[j].Exercises!![k].MaxWeight!!
+                        if (setVolume < exercises[k].MaxSetVolume ?: 0.0) {
+                            val maxReps = exercises[k].MaxReps ?: 0.0
+                            val maxWeight = exercises[k].MaxWeight ?: 0.0
 
                             val pair = Pair(maxReps, maxWeight)
 
@@ -279,39 +280,39 @@ class DataStorage {
                         }
 
                         // Actual One Repetition Maximum
-                        if (actualOneRepMaxPRs[knownExercises[i].Name!!]!! < workoutDays[j].Exercises!![k].ActualOneRepMax!!) {
-                            workoutDays[j].Exercises!![k].ActualOneRepMaxPR = true
-                            actualOneRepMaxPRs[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].ActualOneRepMax!!
+                        if (actualOneRepMaxPRs[knownExercises[i].Name!!]!! < exercises[k].ActualOneRepMax ?: 0.0) {
+                            exercises[k].ActualOneRepMaxPR = true
+                            actualOneRepMaxPRs[knownExercises[i].Name!!] = exercises[k].ActualOneRepMax ?: 0.0
                         }
 
                         // Estimated One Repetition Maximum
-                        if (estimatedOneRMPRs[knownExercises[i].Name!!]!! < workoutDays[j].Exercises!![k].EstimatedOneRepMax!!) {
-                            workoutDays[j].Exercises!![k].EstimatedOneRepMaxPR = true
-                            estimatedOneRMPRs[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].EstimatedOneRepMax!!
+                        if (estimatedOneRMPRs[knownExercises[i].Name!!]!! < exercises[k].EstimatedOneRepMax ?: 0.0) {
+                            exercises[k].EstimatedOneRepMaxPR = true
+                            estimatedOneRMPRs[knownExercises[i].Name!!] = exercises[k].EstimatedOneRepMax ?: 0.0
                         }
 
                         // Max Repetitions Personal Records
-                        if (maxRepsPRs[knownExercises[i].Name!!]!! < workoutDays[j].Exercises!![k].MaxReps!!) {
-                            workoutDays[j].Exercises!![k].MaxRepsPR = true
-                            maxRepsPRs[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].MaxReps!!
-                            maxRepsSetPRs[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].maxRepsSet!!
+                        if (maxRepsPRs[knownExercises[i].Name!!]!! < exercises[k].MaxReps ?: 0.0) {
+                            exercises[k].MaxRepsPR = true
+                            maxRepsPRs[knownExercises[i].Name!!] = exercises[k].MaxReps ?: 0.0
+                            exercises[k].maxRepsSet?.let { maxRepsSetPRs[knownExercises[i].Name!!] = it }
                         }
 
                         // Max Weight Personal Records
-                        if (maxWeightPRs[knownExercises[i].Name!!]!! < workoutDays[j].Exercises!![k].MaxWeight!!) {
-                            workoutDays[j].Exercises!![k].MaxWeightPR = true
-                            maxWeightPRs[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].MaxWeight!!
-                            maxWeightSetPRs[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].maxWeightSet!!
+                        if (maxWeightPRs[knownExercises[i].Name!!]!! < exercises[k].MaxWeight ?: 0.0) {
+                            exercises[k].MaxWeightPR = true
+                            maxWeightPRs[knownExercises[i].Name!!] = exercises[k].MaxWeight ?: 0.0
+                            exercises[k].maxWeightSet?.let { maxWeightSetPRs[knownExercises[i].Name!!] = it }
                         }
 
                         // Harder Than Last Time!
-                        if (lastTimeVolume[knownExercises[i].Name!!]!! < workoutDays[j].Exercises!![k].Volume!!) {
-                            workoutDays[j].Exercises!![k].HTLT = true
-                            lastTimeVolume[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].Volume!!
+                        if (lastTimeVolume[knownExercises[i].Name!!]!! < exercises[k].Volume ?: 0.0) {
+                            exercises[k].HTLT = true
+                            lastTimeVolume[knownExercises[i].Name!!] = exercises[k].Volume ?: 0.0
                         }
                         // This needs to be updates since we are dealing with last time and not overall maximums
                         else {
-                            lastTimeVolume[knownExercises[i].Name!!] = workoutDays[j].Exercises!![k].Volume!!
+                            lastTimeVolume[knownExercises[i].Name!!] = exercises[k].Volume ?: 0.0
                         }
                     }
                 }
