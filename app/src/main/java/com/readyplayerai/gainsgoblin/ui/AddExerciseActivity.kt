@@ -12,7 +12,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -32,7 +31,6 @@ import android.widget.TextView
 import android.widget.Toast
 
 import com.readyplayerai.gainsgoblin.KeyboardHider
-import com.readyplayerai.gainsgoblin.MonthXAxisFormatter
 import com.readyplayerai.gainsgoblin.SnackBarWithMessage
 import com.readyplayerai.gainsgoblin.adapters.AddExerciseWorkoutSetAdapter
 import com.readyplayerai.gainsgoblin.adapters.ExerciseHistoryExerciseAdapter
@@ -40,15 +38,9 @@ import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
 import com.readyplayerai.gainsgoblin.model.WorkoutSet
-import com.github.mikephil.charting.animation.Easing
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.highlight.Highlight
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import com.readyplayerai.gainsgoblin.ui.charts.ChartPoint
+import com.readyplayerai.gainsgoblin.ui.charts.LineChartView
+import com.readyplayerai.gainsgoblin.ui.charts.OnPointSelectedListener
 
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -390,12 +382,12 @@ class AddExerciseActivity : AppCompatActivity() {
                     .create()
 
             // Get Chart Object
-            val lineChart = view.findViewById<LineChart>(R.id.lineChart)
+            val lineChart = view.findViewById<LineChartView>(R.id.lineChart)
 
             // Create Array List that will hold graph data
-            val volumeValues = ArrayList<Entry>()
-            val maxWeightValues = ArrayList<Entry>()
-            val totalRepsValues = ArrayList<Entry>()
+            val volumeValues = ArrayList<ChartPoint>()
+            val maxWeightValues = ArrayList<ChartPoint>()
+            val totalRepsValues = ArrayList<ChartPoint>()
 
             val workoutDates = ArrayList<String>()
             val workoutMonths = ArrayList<String>()
@@ -408,11 +400,11 @@ class AddExerciseActivity : AppCompatActivity() {
                     val currentExercise = MainActivity.dataStorage.workoutDays[i].Exercises!![j]
 
                     if (currentExercise.Exercise == exercise_name) {
-                        volumeValues.add(Entry(x.toFloat(), currentExercise.Volume!!.toFloat()))
+                        volumeValues.add(ChartPoint(x.toFloat(), currentExercise.Volume!!.toFloat()))
 
-                        maxWeightValues.add(Entry(x.toFloat(), currentExercise.MaxWeight!!.toFloat()))
+                        maxWeightValues.add(ChartPoint(x.toFloat(), currentExercise.MaxWeight!!.toFloat()))
 
-                        totalRepsValues.add(Entry(x.toFloat(), currentExercise.TotalReps!!.toFloat()))
+                        totalRepsValues.add(ChartPoint(x.toFloat(), currentExercise.TotalReps!!.toFloat()))
 
                         // Add the date corresponding to the data point
                         workoutDates.add(MainActivity.dataStorage.workoutDays[i].Date!!)
@@ -519,10 +511,10 @@ class AddExerciseActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun setupChartWithOptions(selectedOption1: String, selectedOption2: String, volumeValues: ArrayList<Entry>, maxWeightValues: ArrayList<Entry>, totalRepsValues: ArrayList<Entry>, workoutDates: ArrayList<String>, workoutMonths: ArrayList<String>, alertDialog: AlertDialog?, lineChart: LineChart?) {
+    private fun setupChartWithOptions(selectedOption1: String, selectedOption2: String, volumeValues: ArrayList<ChartPoint>, maxWeightValues: ArrayList<ChartPoint>, totalRepsValues: ArrayList<ChartPoint>, workoutDates: ArrayList<String>, workoutMonths: ArrayList<String>, alertDialog: AlertDialog?, lineChart: LineChartView?) {
         var label = String()
-        var actualValues = ArrayList<Entry>()
-        var finalValues = ArrayList<Entry>()
+        var actualValues = ArrayList<ChartPoint>()
+        var finalValues = ArrayList<ChartPoint>()
 
         if (selectedOption2 == "Weight") {
             actualValues = maxWeightValues
@@ -555,7 +547,8 @@ class AddExerciseActivity : AppCompatActivity() {
         }
 
         finalValues = ArrayList(actualValues.subList(index, actualValues.size))
-        setupLineChart(alertDialog, finalValues, lineChart, workoutMonths, workoutDates, label, true)
+        val finalMonths = ArrayList(workoutMonths.subList(index, workoutMonths.size))
+        setupLineChart(alertDialog, finalValues, lineChart, finalMonths, workoutDates, label, true)
     }
 
     private fun getIndexOfLastXMonths(workoutDates: ArrayList<String>, months: Int): Int {
@@ -648,119 +641,31 @@ class AddExerciseActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    fun setupLineChart(alertDialog: AlertDialog?, volumeValues: ArrayList<Entry>, lineChart: LineChart?, workoutMonths: ArrayList<String>, workoutDates: ArrayList<String>, label: String, showYaxis: Boolean) {
-        val volumeSet = LineDataSet(volumeValues, label)
-        val data = LineData(volumeSet)
-
-        // Style the line and the values
-        volumeSet.setLineWidth(3f)
-        volumeSet.setColor(ContextCompat.getColor(this, R.color.colorPrimary))
-        volumeSet.setCircleColor(ContextCompat.getColor(this, R.color.colorPrimary))
-        volumeSet.setCircleRadius(2f)
-        volumeSet.setCircleHoleColor(ContextCompat.getColor(this, R.color.colorPrimary))
-        volumeSet.setValueTextSize(10f)
-        volumeSet.setValueTextColor(Color.BLACK)
-        // volumeSet.setMode(LineDataSet.Mode.CUBIC_BEZIER)
-        // Remove circles around data points
-        volumeSet.setDrawCircles(true)
-
-        // Hide data values next to points
-        volumeSet.setDrawValues(false)
-
-        // Style the chart
-        lineChart!!.setData(data)
-        lineChart!!.getDescription().setEnabled(false)
-        lineChart!!.setDrawGridBackground(false)
-        lineChart!!.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM)
-        lineChart!!.getXAxis().setDrawGridLines(false)
-        lineChart!!.getAxisLeft().setDrawGridLines(false)
-        lineChart!!.getAxisRight().setEnabled(false)
-
-        // Enable horizontal grid lines
-        lineChart!!.getAxisLeft().setDrawGridLines(true)
-        lineChart!!.getAxisLeft().setGridColor(Color.LTGRAY)
-        lineChart!!.getAxisLeft().setGridLineWidth(1f)
-
-        // Disable Y-axis line
-        lineChart!!.getAxisLeft().setDrawAxisLine(false)
-        lineChart!!.getAxisLeft().setDrawLabels(false)
-
-        // Hide Y-axis values
-        lineChart!!.getAxisLeft().setEnabled(true)
-        lineChart!!.getAxisLeft().setTextSize(0f)
-        lineChart!!.getXAxis().setEnabled(true)
-
-        // Set the custom X-axis value formatter
-        val xAxis = lineChart!!.getXAxis()
-        xAxis.setValueFormatter(MonthXAxisFormatter(workoutMonths))
-        xAxis.setGranularity(2f) // Set minimum interval to 1
-        xAxis.setGranularityEnabled(true) // Enable granularity
-
-        xAxis.setLabelCount(5, false) // Display only 5 labels on the X-axis
-
-        // Enable pinch zooming
-        lineChart!!.setPinchZoom(true)
-
-        // Enable scaling (zooming) on both X and Y axes
-        lineChart!!.setScaleEnabled(true)
-
-        lineChart!!.animateXY(1000, 1000, Easing.EaseInOutCubic)
-
-        // Reset chart
-        lineChart!!.fitScreen()
-        lineChart!!.getViewPortHandler().refresh(Matrix(), lineChart!!, true)
-        lineChart!!.invalidate()
-
-        // Zoom in to show the last X points
-        // val pointsToShow = 10
-        // lineChart.setVisibleXRange(pointsToShow, pointsToShow)
-        // lineChart.moveViewToX(volumeValues.size() - pointsToShow)
-
-        // Style legend
-        val legend = lineChart!!.getLegend()
-        legend.setOrientation(Legend.LegendOrientation.VERTICAL)
-        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT)
-        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.CENTER)
-        legend.setDrawInside(true)
-        legend.setXOffset(30f) // Adjust this value to move the legend horizontally
-        legend.setYOffset(-270f) // Adjust this value to move the legend vertically
-        legend.setTextSize(12f)
-        legend.setTextColor(Color.BLACK)
-        legend.setForm(Legend.LegendForm.LINE)
-        legend.setFormLineWidth(3f)
-        legend.setFormSize(14f)
-
-        lineChart!!.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
-            override fun onValueSelected(e: Entry, h: Highlight) {
-                popupChartAlertDialog(e, workoutMonths, label)
-            }
-
-            override fun onNothingSelected() {
-                // Do nothing
+    fun setupLineChart(alertDialog: AlertDialog?, volumeValues: ArrayList<ChartPoint>, lineChart: LineChartView?, workoutMonths: ArrayList<String>, workoutDates: ArrayList<String>, label: String, showYaxis: Boolean) {
+        lineChart?.setData(volumeValues, workoutMonths)
+        lineChart?.setOnPointSelectedListener(object : OnPointSelectedListener {
+            override fun onPointSelected(index: Int, x: Float, y: Float) {
+                popupChartAlertDialog(index, y, workoutMonths, label)
             }
         })
-
-        // Show Chart Dialog box
-        alertDialog!!.show()
+        alertDialog?.show()
     }
 
-    fun popupChartAlertDialog(e: Entry, workoutMonths: ArrayList<String>, label: String) {
-        val xValue = e.getX()
-
+    fun popupChartAlertDialog(xIndex: Int, yValue: Float, workoutMonths: ArrayList<String>, label: String) {
         // Dismiss the current dialog if it is showing
         if (currentDialog != null && currentDialog!!.isShowing()) {
             currentDialog!!.dismiss()
         }
 
         val builder = AlertDialog.Builder(this)
-        builder.setTitle(workoutMonths[xValue.toInt()])
+        builder.setTitle(workoutMonths[xIndex])
 
         val inflater = LayoutInflater.from(this)
         val dialogView = inflater.inflate(R.layout.custom_alert_dialog, null)
         builder.setView(dialogView)
 
         val messageTextView = dialogView.findViewById<TextView>(R.id.message_text_view)
-        messageTextView.setText(e.getY().toString() + " " + label)
+        messageTextView.setText(yValue.toString() + " " + label)
 
         val dialog = builder.create()
 

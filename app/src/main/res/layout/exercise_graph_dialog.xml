@@ -32,7 +32,7 @@
         app:layout_constraintTop_toBottomOf="@+id/tv_date"
         tools:layout_editor_absoluteX="16dp" />
 
-    <com.github.mikephil.charting.charts.LineChart
+    <com.readyplayerai.gainsgoblin.ui.charts.LineChartView
         android:id="@+id/lineChart"
         android:layout_width="match_parent"
         android:layout_height="320dp"
@@ -45,7 +45,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/blue_line">
 
-    </com.github.mikephil.charting.charts.LineChart>
+    </com.readyplayerai.gainsgoblin.ui.charts.LineChartView>
 
 
     <Spinner

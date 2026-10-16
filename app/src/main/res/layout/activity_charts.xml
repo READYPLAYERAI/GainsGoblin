@@ -95,7 +95,7 @@
                         app:srcCompat="@drawable/ic_more_vert_24px" />
 
 
-                    <com.github.mikephil.charting.charts.PieChart
+                    <com.readyplayerai.gainsgoblin.ui.charts.PieChartView
                         android:id="@+id/pieChart"
                         android:layout_width="match_parent"
                         android:layout_height="300dp"
@@ -103,7 +103,7 @@
                         android:visibility="visible"
                         app:layout_constraintTop_toBottomOf="@+id/blue_line">
 
-                    </com.github.mikephil.charting.charts.PieChart>
+                    </com.readyplayerai.gainsgoblin.ui.charts.PieChartView>
 
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -127,14 +127,14 @@
                     android:layout_height="wrap_content">
 
 
-                    <com.github.mikephil.charting.charts.PieChart
+                    <com.readyplayerai.gainsgoblin.ui.charts.PieChartView
                         android:id="@+id/pieChartBodyparts"
                         android:layout_width="match_parent"
                         android:layout_height="300dp"
                         android:visibility="visible"
                         app:layout_constraintTop_toBottomOf="@+id/view3">
 
-                    </com.github.mikephil.charting.charts.PieChart>
+                    </com.readyplayerai.gainsgoblin.ui.charts.PieChartView>
 
 
                     <TextView
@@ -210,14 +210,14 @@
                     android:layout_height="wrap_content">
 
 
-                    <com.github.mikephil.charting.charts.PieChart
+                    <com.readyplayerai.gainsgoblin.ui.charts.PieChartView
                         android:id="@+id/pieChartExercises"
                         android:layout_width="match_parent"
                         android:layout_height="300dp"
                         android:visibility="visible"
                         app:layout_constraintTop_toBottomOf="@+id/view4">
 
-                    </com.github.mikephil.charting.charts.PieChart>
+                    </com.readyplayerai.gainsgoblin.ui.charts.PieChartView>
 
 
                     <TextView
@@ -296,14 +296,14 @@
                     android:layout_height="wrap_content">
 
 
-                    <com.github.mikephil.charting.charts.BarChart
+                    <com.readyplayerai.gainsgoblin.ui.charts.BarChartView
                         android:id="@+id/barChart"
                         android:layout_width="match_parent"
                         android:layout_height="300dp"
                         android:visibility="visible"
                         app:layout_constraintTop_toBottomOf="@+id/view2">
 
-                    </com.github.mikephil.charting.charts.BarChart>
+                    </com.readyplayerai.gainsgoblin.ui.charts.BarChartView>
 
 
                     <TextView
@@ -381,14 +381,14 @@
                     android:layout_height="40dp">
 
 
-                    <com.github.mikephil.charting.charts.BarChart
+                    <com.readyplayerai.gainsgoblin.ui.charts.BarChartView
                         android:id="@+id/barChart1"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:visibility="visible"
                         app:layout_constraintTop_toBottomOf="@+id/view5">
 
-                    </com.github.mikephil.charting.charts.BarChart>
+                    </com.readyplayerai.gainsgoblin.ui.charts.BarChartView>
 
 
                     <TextView

@@ -4,7 +4,6 @@ import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
@@ -13,18 +12,9 @@ import android.view.View
 import android.widget.ScrollView
 
 import com.readyplayerai.gainsgoblin.R
-import com.github.mikephil.charting.animation.Easing
-import com.github.mikephil.charting.charts.BarChart
-import com.github.mikephil.charting.charts.PieChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.data.PieData
-import com.github.mikephil.charting.data.PieDataSet
-import com.github.mikephil.charting.data.PieEntry
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import com.github.mikephil.charting.utils.ColorTemplate
+import com.readyplayerai.gainsgoblin.ui.charts.BarChartView
+import com.readyplayerai.gainsgoblin.ui.charts.PieChartView
+import com.readyplayerai.gainsgoblin.ui.charts.PieSlice
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 import java.util.ArrayList
@@ -72,54 +62,34 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
     }
 
     fun barChartVolumes() {
-        // Bar Chart Example
-        val barChart = findViewById<BarChart>(R.id.barChart)
-        // Interaction Customization
+        // Bar Chart
+        val barChart = findViewById<BarChartView>(R.id.barChart)
 
-        // Add Data pairs in List
-        val workouts = ArrayList<BarEntry>()
+        // Add volumes
+        val workouts = ArrayList<Float>()
 
         for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            workouts.add(BarEntry(i.toFloat(), MainActivity.dataStorage.workoutDays[i].DayVolume!!.toFloat()))
+            workouts.add(MainActivity.dataStorage.workoutDays[i].DayVolume!!.toFloat())
         }
-
-        // Add Date Labels to workout
-        val workoutDates = ArrayList<String>()
 
         // Make it invisible because otherwise it looks like shit
         if (workouts.size == 0) {
             barChart.setVisibility(View.INVISIBLE)
         }
 
-        // Remove Legend
-        val l = barChart.getLegend()
-        l.setEnabled(false)
-
         // Show last X workouts only
         val last_workouts = 5
         var counter = 0
-        val workouts_pruned = ArrayList<BarEntry>()
+        val volumes = ArrayList<Float>()
 
         for (i in 0 until workouts.size) {
             counter++
             if (counter > workouts.size - last_workouts) {
-                workouts_pruned.add(workouts[i])
+                volumes.add(workouts[i])
             }
         }
 
-        val barDataSet = BarDataSet(workouts_pruned, "Workouts")
-        barDataSet.setColors(ColorTemplate.JOYFUL_COLORS.toList())
-
-        barChart.getXAxis().setValueFormatter(IndexAxisValueFormatter(workoutDates))
-
-        // Profit
-        val barData = BarData(barDataSet)
-        barChart.setFitBars(true)
-        barChart.setData(barData)
-        barChart.getDescription().setText("")
-        barChart.invalidate()
-        barChart.animateY(500)
-        barChart.setScaleMinima(1f, 1f)
+        barChart.setData(volumes)
     }
 
     fun pieChartWorkouts() {
@@ -150,39 +120,19 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         }
 
         // Initialize Pie Chart
-        val pieChart = findViewById<PieChart>(R.id.pieChart)
+        val pieChart = findViewById<PieChartView>(R.id.pieChart)
 
-        pieChart.setUsePercentValues(false)
-        pieChart.getDescription().setEnabled(false)
-        pieChart.setExtraOffsets(5f, 10f, 5f, 5f)
-        pieChart.setDragDecelerationFrictionCoef(0.95f)
-        pieChart.setDrawHoleEnabled(false)
-        pieChart.setHoleColor(Color.WHITE)
-        pieChart.setTransparentCircleRadius(60f)
-
-        val yValues = ArrayList<PieEntry>()
+        val slices = ArrayList<PieSlice>()
 
         for (entry in Years_Workouts) {
-            val workouts = entry.value
+            val count = entry.value
             val year = entry.key
 
-            yValues.add(PieEntry(workouts.toFloat(), year))
+            slices.add(PieSlice(label = year, value = count.toFloat()))
         }
 
-        val pieDataSet = PieDataSet(yValues, "")
-
-        pieDataSet.setSliceSpace(3f)
-        pieDataSet.setSelectionShift(5f)
-        pieDataSet.setColors(ColorTemplate.JOYFUL_COLORS.toList())
-
-        val data = PieData(pieDataSet)
-        data.setValueTextSize(15f)
-        data.setValueTextColor(Color.WHITE)
-
-        pieChart.animateY(1000, Easing.EaseInOutCubic)
         pieChart.setNoDataText("No Workouts")
-        pieChart.getLegend().setEnabled(false)
-        pieChart.setData(data)
+        pieChart.setData(slices)
     }
 
     fun pieChartBodyparts() {
@@ -215,39 +165,19 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         }
 
         // Initialize Pie Chart
-        val pieChart = findViewById<PieChart>(R.id.pieChartBodyparts)
+        val pieChart = findViewById<PieChartView>(R.id.pieChartBodyparts)
 
-        pieChart.setUsePercentValues(false)
-        pieChart.getDescription().setEnabled(false)
-        pieChart.setExtraOffsets(5f, 10f, 5f, 5f)
-        pieChart.setDragDecelerationFrictionCoef(0.95f)
-        pieChart.setDrawHoleEnabled(false)
-        pieChart.setHoleColor(Color.WHITE)
-        pieChart.setTransparentCircleRadius(60f)
-
-        val yValues = ArrayList<PieEntry>()
+        val slices = ArrayList<PieSlice>()
 
         for (entry in Number_Bodyparts) {
-            val workouts = entry.value
-            val year = entry.key
+            val count = entry.value
+            val name = entry.key
 
-            yValues.add(PieEntry(workouts.toFloat(), year))
+            slices.add(PieSlice(label = name, value = count.toFloat()))
         }
 
-        val pieDataSet = PieDataSet(yValues, "")
-
-        pieDataSet.setSliceSpace(3f)
-        pieDataSet.setSelectionShift(5f)
-        pieDataSet.setColors(ColorTemplate.JOYFUL_COLORS.toList())
-
-        val data = PieData(pieDataSet)
-        data.setValueTextSize(15f)
-        data.setValueTextColor(Color.WHITE)
-
-        pieChart.getLegend().setEnabled(false)
-        pieChart.animateY(1000, Easing.EaseInOutCubic)
         pieChart.setNoDataText("No Workouts")
-        pieChart.setData(data)
+        pieChart.setData(slices)
     }
 
     fun piChartExercises() {
@@ -297,39 +227,19 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         }
 
         // Initialize Pie Chart
-        val pieChart = findViewById<PieChart>(R.id.pieChartExercises)
+        val pieChart = findViewById<PieChartView>(R.id.pieChartExercises)
 
-        pieChart.setUsePercentValues(false)
-        pieChart.getDescription().setEnabled(false)
-        pieChart.setExtraOffsets(5f, 10f, 5f, 5f)
-        pieChart.setDragDecelerationFrictionCoef(0.95f)
-        pieChart.setDrawHoleEnabled(false)
-        pieChart.setHoleColor(Color.WHITE)
-        pieChart.setTransparentCircleRadius(60f)
-
-        val yValues = ArrayList<PieEntry>()
+        val slices = ArrayList<PieSlice>()
 
         for (entry in Number_Exercises_Sorted_Pruned) {
-            val workouts = entry.value
-            val year = entry.key
+            val count = entry.value
+            val name = entry.key
 
-            yValues.add(PieEntry(workouts.toFloat(), year))
+            slices.add(PieSlice(label = name, value = count.toFloat()))
         }
 
-        val pieDataSet = PieDataSet(yValues, "")
-
-        pieDataSet.setSliceSpace(3f)
-        pieDataSet.setSelectionShift(5f)
-        pieDataSet.setColors(ColorTemplate.JOYFUL_COLORS.toList())
-
-        val data = PieData(pieDataSet)
-        data.setValueTextSize(15f)
-        data.setValueTextColor(Color.WHITE)
-
-        pieChart.getLegend().setEnabled(false)
-        pieChart.animateY(1000, Easing.EaseInOutCubic)
         pieChart.setNoDataText("No Workouts")
-        pieChart.setData(data)
+        pieChart.setData(slices)
     }
 
     private fun sortValues(map: HashMap<String, Int>): HashMap<String, Int> {
