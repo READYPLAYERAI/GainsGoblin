@@ -118,6 +118,15 @@ class ExerciseStatsAdapter(ct: Context?, exercisePersonalStats: ArrayList<Exerci
                 notifyDataSetChanged()
             }
         }
+
+        // Keep the full list in sync so deleted exercises don't reappear in search results
+        val exerciseIteratorFull = this.exercisePersonalStatsFull.iterator()
+        while (exerciseIteratorFull.hasNext()) {
+            val current_exercise = exerciseIteratorFull.next()
+            if (current_exercise.exerciseName == exercise_name) {
+                exerciseIteratorFull.remove()
+            }
+        }
     }
 
     private fun showPopupMenu(holder: ExerciseStatsAdapter.MyViewHolder, view: View, position: Int) {
@@ -200,10 +209,10 @@ class ExerciseStatsAdapter(ct: Context?, exercisePersonalStats: ArrayList<Exerci
             else {
                 val filterPattern = constraint.toString().lowercase(Locale.getDefault()).trim()
 
-                for (i in 0 until exercisePersonalStats!!.size) {
+                for (i in 0 until exercisePersonalStatsFull.size) {
                     // If search patterns is contained in exercise name then show it
-                    if (exercisePersonalStats!![i].exerciseName!!.lowercase(Locale.getDefault()).contains(filterPattern)) {
-                        Exercises_Filtered.add(exercisePersonalStats!![i])
+                    if (exercisePersonalStatsFull[i].exerciseName!!.lowercase(Locale.getDefault()).contains(filterPattern)) {
+                        Exercises_Filtered.add(exercisePersonalStatsFull[i])
                     }
                 }
             }

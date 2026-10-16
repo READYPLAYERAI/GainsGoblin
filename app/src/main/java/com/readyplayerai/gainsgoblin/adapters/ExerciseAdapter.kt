@@ -67,6 +67,15 @@ class ExerciseAdapter(ct: Context?, Exercises: ArrayList<Exercise>?) : RecyclerV
                 notifyDataSetChanged()
             }
         }
+
+        // Keep the full list in sync so deleted exercises don't reappear in search results
+        val exerciseIteratorFull = this.Exercises_Full!!.iterator()
+        while (exerciseIteratorFull.hasNext()) {
+            val current_exercise = exerciseIteratorFull.next()
+            if (current_exercise.Name == exercise_name) {
+                exerciseIteratorFull.remove()
+            }
+        }
     }
 
     override fun getItemCount(): Int {
@@ -91,10 +100,10 @@ class ExerciseAdapter(ct: Context?, Exercises: ArrayList<Exercise>?) : RecyclerV
             else {
                 val filterPattern = constraint.toString().lowercase(Locale.getDefault()).trim()
 
-                for (i in 0 until Exercises!!.size) {
+                for (i in 0 until Exercises_Full!!.size) {
                     // If search patterns is contained in exercise name then show it
-                    if (Exercises!![i].Name!!.lowercase(Locale.getDefault()).contains(filterPattern)) {
-                        Exercises_Filtered.add(Exercises!![i])
+                    if (Exercises_Full!![i].Name!!.lowercase(Locale.getDefault()).contains(filterPattern)) {
+                        Exercises_Filtered.add(Exercises_Full!![i])
                     }
                 }
             }
