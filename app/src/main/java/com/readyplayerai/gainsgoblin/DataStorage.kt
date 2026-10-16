@@ -329,6 +329,32 @@ class DataStorage {
         }
     }
 
+    // Backfills null aggregation fields on persisted WorkoutExercise entries
+    // from the day's raw Sets. Repairs data persisted by older versions or
+    // imported from partial backups where these fields were absent.
+    fun repairWorkoutData() {
+        for (day in workoutDays) {
+            val rawSets = day.Sets ?: continue
+            val exercises = day.Exercises ?: continue
+            for (ex in exercises) {
+                val exSets = rawSets.filter { it.exerciseName == ex.Exercise }
+                if (exSets.isEmpty()) continue
+                if (ex.Volume == null) ex.Volume = exSets.sumOf { (it.reps ?: 0.0) * (it.weight ?: 0.0) }
+                if (ex.TotalReps == null) ex.TotalReps = exSets.sumOf { it.reps ?: 0.0 }
+                if (ex.TotalSets == null) ex.TotalSets = exSets.size.toDouble()
+                if (ex.MaxWeight == null) ex.MaxWeight = exSets.maxOf { it.weight ?: 0.0 }
+                if (ex.MaxReps == null) ex.MaxReps = exSets.maxOf { it.reps ?: 0.0 }
+                if (ex.MaxSetVolume == null) ex.MaxSetVolume = exSets.maxOf { (it.reps ?: 0.0) * (it.weight ?: 0.0) }
+                if (ex.EstimatedOneRepMax == null) ex.EstimatedOneRepMax = exSets.maxOf { (it.weight ?: 0.0) * (1 + (it.reps ?: 0.0) / 30.0) }
+                if (ex.ActualOneRepMax == null) ex.ActualOneRepMax = exSets.filter { it.reps == 1.0 }.maxOfOrNull { it.weight ?: 0.0 } ?: 0.0
+                if (ex.Date == null) ex.Date = exSets.first().date
+                if (ex.maxWeightSet == null) ex.maxWeightSet = exSets.maxByOrNull { it.weight ?: 0.0 }
+                if (ex.maxRepsSet == null) ex.maxRepsSet = exSets.maxByOrNull { it.reps ?: 0.0 }
+                if (ex.maxVolumeSet == null) ex.maxVolumeSet = exSets.maxByOrNull { (it.reps ?: 0.0) * (it.weight ?: 0.0) }
+            }
+        }
+    }
+
     // Loads Workout_Days Array List from DataStore (with migration from SharedPreferences)
     fun loadWorkoutData(context: Context) {
         if (workoutDays.isEmpty()) {
@@ -337,6 +363,7 @@ class DataStorage {
             // If there are no previously saved entries make a new object
             val decoded = if (rawJson == null) ArrayList() else ArrayList(json.decodeFromString(listSerializer, rawJson))
             workoutDays = decoded
+            repairWorkoutData()
         }
     }
 
