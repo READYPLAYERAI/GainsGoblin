@@ -1,7 +1,6 @@
 package com.readyplayerai.gainsgoblin.ui
 
 import androidx.activity.viewModels
-import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -11,15 +10,15 @@ import androidx.recyclerview.widget.RecyclerView
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.Toast
 
 import com.readyplayerai.gainsgoblin.adapters.DiaryAdapter
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTopBar
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
+import com.readyplayerai.gainsgoblin.ui.compose.setupTopBar
 
 import java.util.ArrayList
 
@@ -38,6 +37,8 @@ class DiaryActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_diary)
+
+        setupTopBar { GainsGoblinTopBar(title = "Diary") }
 
         System.out.println("DiaryActivity::OnCreate()")
 
@@ -119,18 +120,4 @@ class DiaryActivity : AppCompatActivity() {
         }
     }
 
-    // Menu Stuff
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = getMenuInflater()
-        inflater.inflate(R.menu.diary_activity_menu, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.settings) {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-        }
-        return super.onOptionsItemSelected(item)
-    }
 }

@@ -17,20 +17,23 @@
 
         <activity
             android:name=".ui.ChartsActivity"
-            android:label="Charts" />
+            android:label="Charts"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.CustomExerciseActivity"
             android:label="New Exercise" />
         <activity
             android:name=".ui.ExercisesActivity"
-            android:label="Exercises" />
+            android:label="Exercises"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.DayActivity"
             android:parentActivityName=".ui.DiaryActivity"
             android:label="Day" />
         <activity
             android:name=".ui.SettingsActivity"
-            android:label="Settings" />
+            android:label="Settings"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.CalculatorActivity"
             android:label="Plate Calculator" />
@@ -43,11 +46,13 @@
             android:label="Add Exercise" />
         <activity
             android:name=".ui.DiaryActivity"
-            android:label="Diary" />
+            android:label="Diary"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
-            android:label="@string/app_name" >
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

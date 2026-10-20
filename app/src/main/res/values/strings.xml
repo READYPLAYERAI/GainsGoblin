@@ -32,4 +32,10 @@
     <string name="nav_charts">Charts</string>
     <string name="nav_settings">Settings</string>
 
+    <string name="top_bar_today">Today</string>
+    <string name="top_bar_search">Search</string>
+    <string name="top_bar_close">Close</string>
+    <string name="top_bar_add_exercise">New exercise</string>
+    <string name="top_bar_personal_records">Personal Records</string>
+
 </resources>

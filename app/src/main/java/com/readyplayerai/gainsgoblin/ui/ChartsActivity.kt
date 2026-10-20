@@ -1,15 +1,15 @@
 package com.readyplayerai.gainsgoblin.ui
 
 import androidx.activity.viewModels
-import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.widget.ScrollView
 
@@ -19,7 +19,9 @@ import com.readyplayerai.gainsgoblin.ui.charts.BarChartView
 import com.readyplayerai.gainsgoblin.ui.charts.PieChartView
 import com.readyplayerai.gainsgoblin.ui.charts.PieSlice
 import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTopBar
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
+import com.readyplayerai.gainsgoblin.ui.compose.setupTopBar
 
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -39,6 +41,17 @@ class ChartsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_charts)
+
+        setupTopBar {
+            GainsGoblinTopBar(title = "Charts") {
+                IconButton(onClick = { startActivity(Intent(this@ChartsActivity, PersonalRecordsActivity::class.java)) }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_emoji_events_24px),
+                        contentDescription = stringResource(R.string.top_bar_personal_records),
+                    )
+                }
+            }
+        }
 
         setupBottomNavBar(BottomNavTab.CHARTS)
 
@@ -270,21 +283,4 @@ class ChartsActivity : AppCompatActivity() {
         return sortedHashMap
     }
 
-    // Menu Stuff
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = getMenuInflater()
-        inflater.inflate(R.menu.charts_activity_menu, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.settings) {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-        } else if (item.itemId == R.id.personal_records) {
-            val intent = Intent(this, PersonalRecordsActivity::class.java)
-            startActivity(intent)
-        }
-        return super.onOptionsItemSelected(item)
-    }
 }

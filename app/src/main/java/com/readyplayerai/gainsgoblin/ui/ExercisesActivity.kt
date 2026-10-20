@@ -1,7 +1,6 @@
 package com.readyplayerai.gainsgoblin.ui
 
 import androidx.activity.viewModels
-import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -9,15 +8,13 @@ import androidx.recyclerview.widget.RecyclerView
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.inputmethod.EditorInfo
 
 import com.readyplayerai.gainsgoblin.adapters.ExerciseAdapter
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.ExercisesTopBar
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
+import com.readyplayerai.gainsgoblin.ui.compose.setupTopBar
 
 import java.util.ArrayList
 
@@ -36,6 +33,14 @@ class ExercisesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_exercises)
+
+        setupTopBar {
+            ExercisesTopBar(
+                title = "Exercises",
+                onQueryChange = { query -> exerciseAdapter?.getFilter()?.filter(query) },
+                onAddClick = { startActivity(Intent(this@ExercisesActivity, CustomExerciseActivity::class.java)) },
+            )
+        }
 
         setupBottomNavBar(BottomNavTab.EXERCISES)
 
@@ -77,40 +82,6 @@ class ExercisesActivity : AppCompatActivity() {
         )
         recyclerView!!.setAdapter(exerciseAdapter)
         recyclerView!!.setLayoutManager(LinearLayoutManager(this))
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = getMenuInflater()
-        inflater.inflate(R.menu.exercises_activity_menu, menu)
-
-        // Search Stuff
-        val searchItem = menu.findItem(R.id.search)
-        val searchView = searchItem.getActionView() as androidx.appcompat.widget.SearchView
-
-        searchView.setImeOptions(EditorInfo.IME_ACTION_DONE)
-        searchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(s: String): Boolean {
-                return false
-            }
-
-            override fun onQueryTextChange(s: String): Boolean {
-                exerciseAdapter!!.getFilter().filter(s)
-                return false
-            }
-        })
-
-        return true
-    }
-
-    override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.add) {
-            val intent = Intent(this, CustomExerciseActivity::class.java)
-            startActivity(intent)
-        } else if (item.itemId == R.id.settings) {
-            val intent = Intent(getApplicationContext(), SettingsActivity::class.java)
-            startActivity(intent)
-        }
-        return super.onOptionsItemSelected(item)
     }
 
 }

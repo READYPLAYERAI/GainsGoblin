@@ -9,6 +9,11 @@
     android:orientation="vertical">
 
 
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/top_bar_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_exercises"
         android:layout_width="match_parent"

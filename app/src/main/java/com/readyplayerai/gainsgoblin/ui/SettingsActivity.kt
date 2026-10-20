@@ -11,7 +11,6 @@ import android.widget.Button
 import android.widget.Toast
 
 import androidx.activity.viewModels
-import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
@@ -20,7 +19,9 @@ import androidx.preference.PreferenceManager
 
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTopBar
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
+import com.readyplayerai.gainsgoblin.ui.compose.setupTopBar
 
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -33,6 +34,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
+        setupTopBar { GainsGoblinTopBar(title = "Settings") }
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.settings, SettingsFragment())

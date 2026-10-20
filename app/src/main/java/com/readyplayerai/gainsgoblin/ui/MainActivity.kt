@@ -1,9 +1,12 @@
 package com.readyplayerai.gainsgoblin.ui
 
 import androidx.activity.viewModels
-import androidx.annotation.NonNull
 import androidx.annotation.Nullable
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -15,9 +18,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.widget.DatePicker
 import android.widget.ProgressBar
@@ -28,7 +28,9 @@ import com.readyplayerai.gainsgoblin.adapters.ViewPagerWorkoutDayAdapter
 import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTopBar
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
+import com.readyplayerai.gainsgoblin.ui.compose.setupTopBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 import dagger.hilt.android.AndroidEntryPoint
@@ -64,6 +66,17 @@ class MainActivity : AppCompatActivity(), DatePickerDialog.OnDateSetListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        setupTopBar {
+            GainsGoblinTopBar(title = getString(R.string.app_name)) {
+                IconButton(onClick = { jumpToToday() }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_today_24px),
+                        contentDescription = stringResource(R.string.top_bar_today),
+                    )
+                }
+            }
+        }
 
         fab = findViewById(R.id.floatingActionButton)
 
@@ -126,9 +139,6 @@ class MainActivity : AppCompatActivity(), DatePickerDialog.OnDateSetListener {
 
     // You guessed it!
     fun initActivity() {
-        // Rename top bar to something sensible
-        supportActionBar!!.setTitle(R.string.app_name)
-
         // From Settings Activity when importing CSV
         val intent = intent
 
@@ -236,23 +246,10 @@ class MainActivity : AppCompatActivity(), DatePickerDialog.OnDateSetListener {
         }
     }
 
-    // Menu Stuff
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = menuInflater
-        inflater.inflate(R.menu.main_activity_menu, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.home) {
-            val today_position = viewModel.uiState.value.todayPosition // Navigate to today
-            if (today_position >= 0) {
-                viewPager2!!.setCurrentItem(today_position)
-            }
-        } else if (item.itemId == R.id.settings) {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+    private fun jumpToToday() {
+        val todayPosition = viewModel.uiState.value.todayPosition
+        if (todayPosition >= 0) {
+            viewPager2?.setCurrentItem(todayPosition)
         }
-        return super.onOptionsItemSelected(item)
     }
 }
