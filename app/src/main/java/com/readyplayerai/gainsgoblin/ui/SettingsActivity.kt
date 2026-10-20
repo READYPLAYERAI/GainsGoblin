@@ -10,15 +10,23 @@ import android.view.View
 import android.widget.Button
 import android.widget.Toast
 
+import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 
 import com.readyplayerai.gainsgoblin.R
 
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+
+@AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
+
+    private val viewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +38,17 @@ class SettingsActivity : AppCompatActivity() {
         val actionBar = getSupportActionBar()
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true)
+        }
+    }
+
+    /**
+     * Clears workouts through [SettingsViewModel] and invokes [cb] once the
+     * clear has completed, so the caller can toast and restart on fresh data.
+     */
+    fun clearWorkouts(cb: () -> Unit) {
+        lifecycleScope.launch {
+            viewModel.clearWorkouts()
+            cb()
         }
     }
 
@@ -101,12 +120,12 @@ class SettingsActivity : AppCompatActivity() {
             val bt_no = view.findViewById<Button>(R.id.bt_no3)
 
             bt_yes.setOnClickListener { view ->
-                MainActivity.dataStorage.workoutDays.clear()
-                MainActivity.dataStorage.saveWorkoutData(getContext()!!)
-                alertDialog.dismiss()
-                Toast.makeText(getContext(), "Data Deleted", Toast.LENGTH_SHORT).show()
-                val intent = Intent(getContext()!!, MainActivity::class.java)
-                startActivity(intent)
+                (activity as? SettingsActivity)?.clearWorkouts {
+                    alertDialog.dismiss()
+                    Toast.makeText(getContext(), "Data Deleted", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(getContext()!!, MainActivity::class.java)
+                    startActivity(intent)
+                }
             }
 
             bt_no.setOnClickListener { view ->

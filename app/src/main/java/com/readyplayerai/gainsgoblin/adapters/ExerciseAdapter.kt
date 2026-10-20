@@ -2,7 +2,6 @@ package com.readyplayerai.gainsgoblin.adapters
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -24,15 +23,19 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.readyplayerai.gainsgoblin.model.Exercise
 import com.readyplayerai.gainsgoblin.R
-import com.readyplayerai.gainsgoblin.ui.AddExerciseActivity
-import com.readyplayerai.gainsgoblin.ui.MainActivity
 
 import java.util.ArrayList
 import java.util.Iterator
 import java.util.Locale
 
 // Adapter for Exercise Class
-class ExerciseAdapter(ct: Context?, Exercises: ArrayList<Exercise>?) : RecyclerView.Adapter<ExerciseAdapter.MyViewHolder>() , Filterable {
+class ExerciseAdapter(
+    ct: Context?,
+    Exercises: ArrayList<Exercise>?,
+    private val onRowClick: ((Int) -> Unit)? = null,
+    private val onEdit: ((position: Int, oldName: String, newName: String, newCategory: String?) -> Unit)? = null,
+    private val onDelete: ((position: Int, name: String) -> Unit)? = null
+) : RecyclerView.Adapter<ExerciseAdapter.MyViewHolder>() , Filterable {
 
     private val ct = ct
     private val Exercises = ArrayList(Exercises) // If you this is changed to: this.Exercises = Exercises; then on search diary activity will not recognize known exercises
@@ -51,12 +54,11 @@ class ExerciseAdapter(ct: Context?, Exercises: ArrayList<Exercise>?) : RecyclerV
         holder.tv_exercise_bodypart.text = Exercises!![position].BodyPart
 
         // Goto Add Exercise Activity
-        holder.cardview_exercise_1.setOnClickListener { view ->
-            val `in` = Intent(ct, AddExerciseActivity::class.java)
-            `in`.putExtra("exercise", holder.tv_exercise_name.text.toString())
-            ct!!.startActivity(`in`)
-        }
+        holder.cardview_exercise_1.setOnClickListener { onRowClick?.invoke(holder.adapterPosition) }
     }
+
+    /** Name of the (possibly filtered) exercise at [position]; null when out of range. */
+    fun exerciseNameAt(position: Int): String? = Exercises.getOrNull(position)?.Name
 
     fun deleteExercise(exercise_name: String?) {
         val exerciseIterator = this.Exercises!!.iterator()
@@ -202,7 +204,7 @@ class ExerciseAdapter(ct: Context?, Exercises: ArrayList<Exercise>?) : RecyclerV
 
                     // Call Edit Exercise if user gave reasonable input
                     if (new_exercise_category != null && !new_exercise_category!!.isEmpty() && new_exercise_category!!.length > 0 && new_exercise_name != null && !new_exercise_name.isEmpty() && new_exercise_name.length > 0) {
-                        locallyUpdateExercise(new_exercise_name)
+                        locallyUpdateExercise(position, new_exercise_name)
                         alertDialog.dismiss()
                     }
                     // Tell user to stop fucking around
@@ -232,7 +234,7 @@ class ExerciseAdapter(ct: Context?, Exercises: ArrayList<Exercise>?) : RecyclerV
                 }
 
                 bt_yes.setOnClickListener { view ->
-                    locallyDeleteExercise(position, ct!!)
+                    locallyDeleteExercise(position)
                     alertDialog.dismiss()
                 }
 
@@ -242,23 +244,17 @@ class ExerciseAdapter(ct: Context?, Exercises: ArrayList<Exercise>?) : RecyclerV
             return false
         }
 
-        fun locallyUpdateExercise(new_exercise_name: String) {
-            MainActivity.dataStorage.editExercise(exercise_name, new_exercise_name, new_exercise_category)
-            MainActivity.dataStorage.saveWorkoutData(ct!!)
-            MainActivity.dataStorage.saveKnownExerciseData(ct!!)
+        fun locallyUpdateExercise(position: Int, new_exercise_name: String) {
+            onEdit?.invoke(position, exercise_name!!, new_exercise_name, new_exercise_category)
             notifyDataSetChanged()
         }
 
-        fun locallyDeleteExercise(position: Int, ct: Context) {
-            // Delete Exercise from MainActivity Data Structures
-            MainActivity.dataStorage.deleteExercise(Exercises!![position].Name)
+        fun locallyDeleteExercise(position: Int) {
+            val name = Exercises!![position].Name!!
 
-            // Delete Exercise from Adapter's local data structure
-            deleteExercise(Exercises!![position].Name)
-
-            // Save Results
-            MainActivity.dataStorage.saveKnownExerciseData(ct)
-            MainActivity.dataStorage.saveWorkoutData(ct)
+            // Data flows through the Activity -> repository; keep the adapter snapshot in sync.
+            onDelete?.invoke(position, name)
+            deleteExercise(name)
         }
 
         // Spinner On Item Selected Methods

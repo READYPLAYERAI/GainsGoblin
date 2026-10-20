@@ -1,12 +1,13 @@
 package com.readyplayerai.gainsgoblin.ui
 
+import androidx.activity.viewModels
 import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -34,6 +35,7 @@ import com.readyplayerai.gainsgoblin.KeyboardHider
 import com.readyplayerai.gainsgoblin.SnackBarWithMessage
 import com.readyplayerai.gainsgoblin.adapters.AddExerciseWorkoutSetAdapter
 import com.readyplayerai.gainsgoblin.adapters.ExerciseHistoryExerciseAdapter
+import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
@@ -49,7 +51,16 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+
+@AndroidEntryPoint
 class AddExerciseActivity : AppCompatActivity() {
+
+    private val viewModel: AddExerciseViewModel by viewModels()
+
+    // Last state handed to render()/updateTodaysExercises(); source for rebuilds.
+    private var lastRenderedState: AddExerciseUiState? = null
 
     // Helper Data Structures
     @JvmField var recyclerView: RecyclerView? = null
@@ -98,7 +109,7 @@ class AddExerciseActivity : AppCompatActivity() {
         initActivity()
 
         // Self Explanatory I guess
-        initrecyclerView()
+        lifecycleScope.launch { render(viewModel.freshUiState()) }
     }
 
     // Save / Update
@@ -115,8 +126,10 @@ class AddExerciseActivity : AppCompatActivity() {
                 val reps = java.lang.Double.parseDouble(getText(et_reps!!))
                 val weight = java.lang.Double.parseDouble(getText(et_weight!!))
 
+                val state = lastRenderedState!!
+
                 // Create New Set Object
-                val workoutSet = WorkoutSet(MainActivity.dateSelected, exercise_name, MainActivity.dataStorage.getExerciseCategory(exercise_name), reps, weight)
+                val workoutSet = WorkoutSet(state.selectedDate, exercise_name, exerciseCategoryFor(state.knownExercises, exercise_name), reps, weight)
 
                 // Ignore wrong input
                 if (reps == 0.0 || weight == 0.0 || reps < 0.0 || weight < 0.0) {
@@ -124,38 +137,32 @@ class AddExerciseActivity : AppCompatActivity() {
                 }
                 // Save set
                 else {
-                    // Find if workout day already exists
-                    val position = MainActivity.dataStorage.getDayPosition(MainActivity.dateSelected)
-
-                    // If workout day exists
-                    if (position >= 0) {
-                        // Find comment of that workout day/exercise
-                        val workoutDay = MainActivity.dataStorage.workoutDays[position]
-
-                        for (i in 0 until workoutDay.Sets!!.size) {
-                            val workoutSet1 = workoutDay.Sets!![i]
-
-                            if (workoutSet1.exerciseName!!.equals(exercise_name)) {
-                                val exerciseComment = workoutSet1.comment
-                                if (exerciseComment == "null" || exerciseComment == null) {
-                                    workoutSet.comment = ""
-                                } else {
-                                    workoutSet.comment = exerciseComment
+                    // Keep comment of that workout day/exercise
+                    for (day in state.days) {
+                        if (day.Date == state.selectedDate) {
+                            for (workoutSet1 in day.Sets!!) {
+                                if (workoutSet1.exerciseName!!.equals(exercise_name)) {
+                                    val exerciseComment = workoutSet1.comment
+                                    if (exerciseComment == "null" || exerciseComment == null) {
+                                        workoutSet.comment = ""
+                                    } else {
+                                        workoutSet.comment = exerciseComment
+                                    }
                                 }
                             }
                         }
-
-                        addSetExistingWorkoutDay(workoutSet, position)
                     }
-                    // If not construct new workout day
-                    else {
-                        addSetNewWorkoutDay(workoutSet)
+
+                    lifecycleScope.launch {
+                        viewModel.addSet(workoutSet)
+                        lastRenderedState = viewModel.freshUiState()
+                        updateViewAndShowMessage()
+
+                        // Fixed Myria induced bug
+                        Clicked_Set = Todays_Exercise_Sets.size - 1
                     }
                 }
             }
-
-            // Fixed Myria induced bug
-            Clicked_Set = Todays_Exercise_Sets.size - 1
         }
         // Update Functionality
         else {
@@ -164,17 +171,28 @@ class AddExerciseActivity : AppCompatActivity() {
             to_be_updated_set.date
             to_be_updated_set.exerciseName
 
-            // Find the set in main data structure and delete it
-            for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-                for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
-                    if (MainActivity.dataStorage.workoutDays[i].Sets!![j] == to_be_updated_set) {
-                        val finalI = i
-                        val finalJ = j
-
+            // Find the set in main data structure and update it
+            val state = lastRenderedState!!
+            for (day in state.days) {
+                val sets = day.Sets ?: continue
+                for (j in 0 until sets.size) {
+                    if (sets[j] == to_be_updated_set) {
                         val reps = java.lang.Double.parseDouble(getText(et_reps!!))
                         val weight = java.lang.Double.parseDouble(getText(et_weight!!))
+                        val date = day.Date!!
+                        val setIndex = j
 
-                        updateSet(finalI, finalJ, reps, weight)
+                        lifecycleScope.launch {
+                            viewModel.updateSet(date, setIndex, reps, weight)
+                            lastRenderedState = viewModel.freshUiState()
+
+                            showSnackbarMessage("Set Updated")
+                            updateTodaysExercises()
+
+                            bt_save!!.setText("Save")
+                            bt_clear!!.setText("Clear")
+                            isEditMode = false
+                        }
                         break
                     }
                 }
@@ -189,41 +207,9 @@ class AddExerciseActivity : AppCompatActivity() {
         }
     }
 
-    fun updateSet(finalI: Int, finalJ: Int, reps: Double, weight: Double) {
-        MainActivity.dataStorage.workoutDays[finalI].Sets!![finalJ].reps = reps
-        MainActivity.dataStorage.workoutDays[finalI].Sets!![finalJ].weight = weight
-
-        // Manually update data because of bad design choices
-        MainActivity.dataStorage.workoutDays[finalI].UpdateData()
-
-        // Let the user know I guess
-        runOnUiThread {
-            showSnackbarMessage("Set Updated")
-            updateTodaysExercises()
-        }
-
-        bt_save!!.setText("Save")
-        bt_clear!!.setText("Clear")
-        isEditMode = false
-    }
-
-    fun addSetExistingWorkoutDay(workoutSet: WorkoutSet, position: Int) {
-        MainActivity.dataStorage.workoutDays[position].addSet(workoutSet)
-        updateViewAndShowMessage()
-    }
-
-    fun addSetNewWorkoutDay(workoutSet: WorkoutSet) {
-        val workoutDay = WorkoutDay()
-        workoutDay.addSet(workoutSet)
-        MainActivity.dataStorage.workoutDays.add(workoutDay)
-        updateViewAndShowMessage()
-    }
-
     fun updateViewAndShowMessage() {
-        runOnUiThread {
-            updateTodaysExercises()
-            showSnackbarMessage("Set Added")
-        }
+        updateTodaysExercises()
+        showSnackbarMessage("Set Added")
     }
 
     // Clear
@@ -281,24 +267,25 @@ class AddExerciseActivity : AppCompatActivity() {
 
     // Handles Intent Stuff
     fun initActivity() {
-        val intent = getIntent()
-        exercise_name = intent.getStringExtra("exercise")
+        exercise_name = viewModel.uiState.value.exerciseName
         supportActionBar!!.setTitle(exercise_name)
     }
 
-    // Initialize Recycler View Object
-    fun initrecyclerView() {
+    // Render the current repository state (legacy initrecyclerView + initEditTexts)
+    fun render(state: AddExerciseUiState) {
+        lastRenderedState = state
+
         // Clear since we don't want duplicates
         Todays_Exercise_Sets.clear()
 
         // Find Sets for a specific date and exercise
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
+        for (i in 0 until state.days.size) {
             // If date matches
-            if (MainActivity.dataStorage.workoutDays[i].Date == MainActivity.dateSelected) {
-                for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
+            if (state.days[i].Date == state.selectedDate) {
+                for (j in 0 until state.days[i].Sets!!.size) {
                     // If exercise matches
-                    if (exercise_name == MainActivity.dataStorage.workoutDays[i].Sets!![j].exerciseName) {
-                        Todays_Exercise_Sets.add(MainActivity.dataStorage.workoutDays[i].Sets!![j])
+                    if (exercise_name == state.days[i].Sets!![j].exerciseName) {
+                        Todays_Exercise_Sets.add(state.days[i].Sets!![j])
                     }
                 }
             }
@@ -311,7 +298,7 @@ class AddExerciseActivity : AppCompatActivity() {
         recyclerView!!.setLayoutManager(LinearLayoutManager(this))
 
         // Set Edit Text values to max set volume if possible
-        initEditTexts()
+        initEditTexts(state)
 
         bt_clear!!.setText("Clear")
 
@@ -320,18 +307,18 @@ class AddExerciseActivity : AppCompatActivity() {
     }
 
     // Set Edit Text values to max set volume if sets exist
-    fun initEditTexts() {
+    fun initEditTexts(state: AddExerciseUiState) {
         var max_weight = 0.0
         var max_reps = 0
         var max_exercise_volume = 0.0
 
         // Find Max Weight and Reps for a specific exercise
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
-                if (MainActivity.dataStorage.workoutDays[i].Sets!![j].getVolume()!! > max_exercise_volume && MainActivity.dataStorage.workoutDays[i].Sets!![j].exerciseName == exercise_name) {
-                    max_exercise_volume = MainActivity.dataStorage.workoutDays[i].Sets!![j].getVolume()!!
-                    max_reps = java.lang.Math.round(MainActivity.dataStorage.workoutDays[i].Sets!![j].reps!!).toInt()
-                    max_weight = MainActivity.dataStorage.workoutDays[i].Sets!![j].weight!!
+        for (i in 0 until state.days.size) {
+            for (j in 0 until state.days[i].Sets!!.size) {
+                if (state.days[i].Sets!![j].getVolume()!! > max_exercise_volume && state.days[i].Sets!![j].exerciseName == exercise_name) {
+                    max_exercise_volume = state.days[i].Sets!![j].getVolume()!!
+                    max_reps = java.lang.Math.round(state.days[i].Sets!![j].reps!!).toInt()
+                    max_weight = state.days[i].Sets!![j].weight!!
                 }
             }
         }
@@ -346,14 +333,8 @@ class AddExerciseActivity : AppCompatActivity() {
         }
     }
 
-    // Save Changes in main data structure, save data structure in shared preferences
     override fun onStop() {
         super.onStop()
-        // Sort Before Saving
-        MainActivity.dataStorage.sortWorkoutDaysDate()
-
-        // Actually Save Changes in shared preferences
-        MainActivity.dataStorage.saveWorkoutData(getApplicationContext())
     }
 
     // Menu Stuff
@@ -395,9 +376,10 @@ class AddExerciseActivity : AppCompatActivity() {
             var x = 0
 
             // Get Exercise Volume
-            for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-                for (j in 0 until MainActivity.dataStorage.workoutDays[i].Exercises!!.size) {
-                    val currentExercise = MainActivity.dataStorage.workoutDays[i].Exercises!![j]
+            val state = lastRenderedState!!
+            for (i in 0 until state.days.size) {
+                for (j in 0 until state.days[i].Exercises!!.size) {
+                    val currentExercise = state.days[i].Exercises!![j]
 
                     if (currentExercise.Exercise == exercise_name) {
                         volumeValues.add(ChartPoint(x.toFloat(), currentExercise.Volume!!.toFloat()))
@@ -407,10 +389,10 @@ class AddExerciseActivity : AppCompatActivity() {
                         totalRepsValues.add(ChartPoint(x.toFloat(), currentExercise.TotalReps!!.toFloat()))
 
                         // Add the date corresponding to the data point
-                        workoutDates.add(MainActivity.dataStorage.workoutDays[i].Date!!)
+                        workoutDates.add(state.days[i].Date!!)
 
                         // Add the month corresponding to the data point
-                        val date = MainActivity.dataStorage.workoutDays[i].Date!!
+                        val date = state.days[i].Date!!
                         val month = getMonthFromDateString(date)
                         workoutMonths.add(month)
 
@@ -483,15 +465,26 @@ class AddExerciseActivity : AppCompatActivity() {
 
             // Check if exercise exists (to show the comment if it has one)
             // Find if workout day already exists
-            val exercise_position = MainActivity.dataStorage.getExercisePosition(MainActivity.dateSelected, exercise_name)
+            val state = lastRenderedState!!
+            var day_position = -1
+            var exercise_position = -1
+            for (i in 0 until state.days.size) {
+                if (state.days[i].Date == state.selectedDate) {
+                    val exercises = state.days[i].Exercises!!
+                    for (j in 0 until exercises.size) {
+                        if (exercises[j].Exercise == exercise_name) {
+                            day_position = i
+                            exercise_position = j
+                        }
+                    }
+                }
+            }
 
             // Exists, then show the comment
             if (exercise_position >= 0) {
                 println("We can comment, exercise exists")
 
-                val day_position = MainActivity.dataStorage.getDayPosition(MainActivity.dateSelected)
-
-                val comment = MainActivity.dataStorage.workoutDays[day_position].Exercises!![exercise_position].Comment
+                val comment = state.days[day_position].Exercises!![exercise_position].Comment
 
                 et_exercise_comment!!.setText(comment)
             }
@@ -610,10 +603,11 @@ class AddExerciseActivity : AppCompatActivity() {
         val allPerformedSessions = ArrayList<WorkoutExercise>()
 
         // Find all performed sessions of a specific exercise and add them to local data structure
-        for (i in MainActivity.dataStorage.workoutDays.size - 1 downTo 0) {
-            for (j in 0 until MainActivity.dataStorage.workoutDays[i].Exercises!!.size) {
-                if (MainActivity.dataStorage.workoutDays[i].Exercises!![j].Exercise == exercise_name) {
-                    allPerformedSessions.add(MainActivity.dataStorage.workoutDays[i].Exercises!![j])
+        val state = lastRenderedState!!
+        for (i in state.days.size - 1 downTo 0) {
+            for (j in 0 until state.days[i].Exercises!!.size) {
+                if (state.days[i].Exercises!![j].Exercise == exercise_name) {
+                    allPerformedSessions.add(state.days[i].Exercises!![j])
                 }
             }
         }
@@ -761,9 +755,22 @@ class AddExerciseActivity : AppCompatActivity() {
     fun saveComment(alertDialog: AlertDialog?) {
         // Check if exercise exists (cannot comment on non-existant exercise)
         // Find if workout day already exists
-        val exercise_position = MainActivity.dataStorage.getExercisePosition(MainActivity.dateSelected, exercise_name)
+        val state = lastRenderedState
+        var exerciseExists = false
+        if (state != null) {
+            for (i in 0 until state.days.size) {
+                if (state.days[i].Date == state.selectedDate) {
+                    val exercises = state.days[i].Exercises ?: emptyList()
+                    for (j in 0 until exercises.size) {
+                        if (exercises[j].Exercise == exercise_name) {
+                            exerciseExists = true
+                        }
+                    }
+                }
+            }
+        }
 
-        if (exercise_position >= 0) {
+        if (exerciseExists) {
             println("We can comment, exercise exists")
         } else {
             println("We can't comment, exercise doesn't exist")
@@ -779,36 +786,14 @@ class AddExerciseActivity : AppCompatActivity() {
             comment = getText(et_exercise_comment!!) // Get user comment
         }
 
-        // Get the date for today
-        val day_position = MainActivity.dataStorage.getDayPosition(MainActivity.dateSelected)
-
-        // Modify the data structure to add the comment
-        MainActivity.dataStorage.workoutDays[day_position].Exercises!![exercise_position].Comment = comment
-
-        val finalSize = MainActivity.dataStorage.workoutDays[day_position].Exercises!![exercise_position].Sets!!.size
-
-        // Also modify individual sets
-        for (i in 0 until MainActivity.dataStorage.workoutDays[day_position].Exercises!![exercise_position].Sets!!.size) {
-            val finalI = i
-
-            val set_to_be_updated = MainActivity.dataStorage.workoutDays[day_position].Exercises!![exercise_position].Sets!![i]
-            set_to_be_updated.comment = comment
-
-            updateCommentInSet(day_position, exercise_position, finalI, finalSize, comment)
-            alertDialog!!.dismiss()
-        }
-    }
-
-    fun updateCommentInSet(day_position: Int, exercise_position: Int, finalI: Int, finalSize: Int, comment: String) {
-        MainActivity.dataStorage.workoutDays[day_position].Exercises!![exercise_position].Sets!![finalI].comment = comment
-
-        runOnUiThread {
+        lifecycleScope.launch {
+            viewModel.updateExerciseComment(exercise_name!!, comment)
+            lastRenderedState = viewModel.freshUiState()
             updateTodaysExercises()
-        }
 
-        if (finalI == finalSize - 1) // Show popup only when last set comment is saved
-        {
+            // Show popup only once the last set comment is saved
             showSnackbarMessage("Comment Logged")
+            alertDialog?.dismiss()
         }
     }
 
@@ -882,6 +867,42 @@ class AddExerciseActivity : AppCompatActivity() {
         et_seconds!!.setText(seconds.toString())
     }
 
+    // Deletes the set the adapter reported via Clicked_Set, then refreshes the view.
+    fun confirmDeleteSet() {
+        lifecycleScope.launch {
+            viewModel.deleteSetAt(Todays_Exercise_Sets[Clicked_Set])
+            lastRenderedState = viewModel.freshUiState()
+            showSnackbarMessage("Set Deleted")
+            updateTodaysExercises()
+        }
+    }
+
+    // Updates Local Data Structure
+    fun updateTodaysExercises() {
+        val state = lastRenderedState ?: return
+
+        // Clear since we don't want duplicates
+        Todays_Exercise_Sets.clear()
+
+        // Find Sets for a specific date and exercise
+        for (i in 0 until state.days.size) {
+            // If date matches
+            if (state.days[i].Date == state.selectedDate) {
+                for (j in 0 until state.days[i].Sets!!.size) {
+                    // If exercise matches
+                    if (exercise_name == state.days[i].Sets!![j].exerciseName) {
+                        Todays_Exercise_Sets.add(state.days[i].Sets!![j])
+                    }
+                }
+            }
+        }
+
+        bt_clear!!.setText("Clear")
+
+        // Update Recycler View
+        workoutSetAdapter2!!.notifyDataSetChanged()
+    }
+
     companion object {
         @JvmField var exercise_name: String? = null
         @JvmField var Todays_Exercise_Sets: ArrayList<WorkoutSet> = ArrayList()
@@ -912,44 +933,12 @@ class AddExerciseActivity : AppCompatActivity() {
 
             // Actually Delete set and update local data structure
             bt_yes.setOnClickListener { view ->
-                // Get soon to be deleted set
-                val to_be_removed_set = Todays_Exercise_Sets[Clicked_Set]
-
-                // Find the set in main data structure and delete it
-                for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-                    if (MainActivity.dataStorage.workoutDays[i].Sets!!.contains(to_be_removed_set)) {
-                        val finalI = i
-
-                        deleteSetLogic(ct, finalI, to_be_removed_set)
-                        alertDialog.dismiss()
-                        break
-                    }
-                }
+                (ct as? AddExerciseActivity)?.confirmDeleteSet()
+                alertDialog.dismiss()
             }
 
             // Show delete confirmation dialog box
             alertDialog.show()
-        }
-
-        @JvmStatic fun deleteSetLogic(ct: Context, finalI: Int, to_be_removed_set: WorkoutSet) {
-            MainActivity.dataStorage.workoutDays[finalI].removeSet(to_be_removed_set)
-
-            // Cleanup potential days with 0 sets
-            for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-                if (MainActivity.dataStorage.workoutDays[i].Sets!!.size == 0) {
-                    MainActivity.dataStorage.workoutDays.removeAt(i)
-                }
-            }
-
-            // Bug: If this last set of the day this is required
-            MainActivity.dataStorage.saveWorkoutData(ct)
-            MainActivity.dataStorage.saveKnownExerciseData(ct)
-
-            (ct as Activity).runOnUiThread {
-                val snackBarWithMessage = SnackBarWithMessage(ct)
-                snackBarWithMessage.showSnackbar("Set Deleted")
-                updateTodaysExercises()
-            }
         }
 
         @JvmStatic fun editSet(holder: AddExerciseWorkoutSetAdapter.MyViewHolder?, view: View?, position: Int) {
@@ -973,30 +962,6 @@ class AddExerciseActivity : AppCompatActivity() {
             // Update Edit Texts
             et_weight!!.setText(clicked_set.weight!!.toString())
             et_reps!!.setText(clicked_set.reps!!.toInt().toString())
-        }
-
-        // Updates Local Data Structure
-        @JvmStatic fun updateTodaysExercises() {
-            // Clear since we don't want duplicates
-            Todays_Exercise_Sets.clear()
-
-            // Find Sets for a specific date and exercise
-            for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-                // If date matches
-                if (MainActivity.dataStorage.workoutDays[i].Date == MainActivity.dateSelected) {
-                    for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
-                        // If exercise matches
-                        if (exercise_name == MainActivity.dataStorage.workoutDays[i].Sets!![j].exerciseName) {
-                            Todays_Exercise_Sets.add(MainActivity.dataStorage.workoutDays[i].Sets!![j])
-                        }
-                    }
-                }
-            }
-
-            bt_clear!!.setText("Clear")
-
-            // Update Recycler View
-            workoutSetAdapter2!!.notifyDataSetChanged()
         }
     }
 }

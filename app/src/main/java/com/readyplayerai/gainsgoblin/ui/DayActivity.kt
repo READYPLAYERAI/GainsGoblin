@@ -1,7 +1,11 @@
 package com.readyplayerai.gainsgoblin.ui
 
+import androidx.activity.viewModels
 import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -10,19 +14,19 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.View
 import android.widget.Toast
 
 import com.readyplayerai.gainsgoblin.adapters.DayExerciseAdapter
 import com.readyplayerai.gainsgoblin.R
-import com.readyplayerai.gainsgoblin.model.WorkoutExercise
+import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-import java.text.ParseException
-import java.text.SimpleDateFormat
 import java.util.ArrayList
-import java.util.Date
 
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+
+@AndroidEntryPoint
 class DayActivity : AppCompatActivity() {
 
     var recyclerView: RecyclerView? = null
@@ -31,12 +35,20 @@ class DayActivity : AppCompatActivity() {
 
     var fab: FloatingActionButton? = null
 
+    private val viewModel: DayViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_day)
 
         // Self Explanatory I guess
         initActivity()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state -> render(state) }
+            }
+        }
     }
 
     // Haven't we said that already?
@@ -50,42 +62,35 @@ class DayActivity : AppCompatActivity() {
 
         // Recycler View Stuff
         recyclerView = findViewById<RecyclerView>(R.id.recycler_view_day)
+    }
 
-        // From Main Activity
-        val mIntent = getIntent()
-        val extras = mIntent.getExtras()
-        date_clicked = extras!!.getString("date")
+    private fun render(state: DayUiState) {
+        // A null title means the legacy date parse failed: render nothing (parity).
+        if (state.title == null) {
+            return
+        }
 
-        //Date Stuff
-        val parser = SimpleDateFormat("yyyy-MM-dd")
-        var date: Date? = null
+        date_clicked = state.date
+        supportActionBar!!.setTitle(state.title)
 
-        try {
-            date = parser.parse(date_clicked)
-            val formatter = SimpleDateFormat("EEEE, MMM dd YYYY")
-            val formated_date = formatter.format(date)
-            supportActionBar!!.setTitle(formated_date)
+        // Set Recycler View
+        workoutExerciseAdapter = DayExerciseAdapter(
+            this,
+            ArrayList(state.exercises),
+            onEditClick = { position ->
+                val ex = state.exercises[position]
+                val intent = Intent(this, AddExerciseActivity::class.java)
+                intent.putExtra("exercise", ex.Exercise)
+                startActivity(intent)
+            },
+            categoryFor = { name -> exerciseCategoryFor(state.knownExercises, name) }
+        )
+        recyclerView!!.setAdapter(workoutExerciseAdapter)
+        recyclerView!!.setLayoutManager(LinearLayoutManager(this))
 
-            var Today_Exercises = ArrayList<WorkoutExercise>()
-
-            for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-                if (date_clicked == MainActivity.dataStorage.workoutDays[i].Date) {
-                    Today_Exercises = MainActivity.dataStorage.workoutDays[i].Exercises!!
-                }
-            }
-
-            // Set Recycler View
-            workoutExerciseAdapter = DayExerciseAdapter(this, Today_Exercises)
-            recyclerView!!.setAdapter(workoutExerciseAdapter)
-            recyclerView!!.setLayoutManager(LinearLayoutManager(this))
-
-            // Notify User
-            if (Today_Exercises.isEmpty()) {
-                Toast.makeText(getApplicationContext(), "No Logged Exercises", Toast.LENGTH_SHORT).show()
-            }
-
-        } catch (e: ParseException) {
-            e.printStackTrace()
+        // Notify User
+        if (state.exercises.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "No Logged Exercises", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -94,7 +99,7 @@ class DayActivity : AppCompatActivity() {
         super.onRestart()
 
         // Self Explanatory I guess
-        initActivity()
+        lifecycleScope.launch { render(viewModel.freshUiState()) }
     }
 
     // Menu Methods

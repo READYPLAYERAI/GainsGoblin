@@ -2,7 +2,6 @@ package com.readyplayerai.gainsgoblin.adapters
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,8 +16,6 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
-import com.readyplayerai.gainsgoblin.ui.DayActivity
-import com.readyplayerai.gainsgoblin.ui.MainActivity
 
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -26,10 +23,19 @@ import java.util.ArrayList
 import java.util.Date
 
 // Adapter for WorkoutDay Class
-class DiaryAdapter(ct: Context?, Workout_Days: ArrayList<WorkoutDay>?) : RecyclerView.Adapter<DiaryAdapter.MyViewHolder>() {
+class DiaryAdapter(
+    ct: Context?,
+    Workout_Days: ArrayList<WorkoutDay>?,
+    onDayClick: ((Int) -> Unit)? = null,
+    onExerciseClick: ((WorkoutDay, Int) -> Unit)? = null,
+    categoryFor: ((String) -> String?)? = null
+) : RecyclerView.Adapter<DiaryAdapter.MyViewHolder>() {
 
     private val ct = ct
     private val Workout_Days = ArrayList(Workout_Days)
+    private val onDayClick = onDayClick
+    private val onExerciseClick = onExerciseClick
+    private val categoryFor = categoryFor
 
     @NonNull
     override fun onCreateViewHolder(@NonNull parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -53,7 +59,14 @@ class DiaryAdapter(ct: Context?, Workout_Days: ArrayList<WorkoutDay>?) : Recycle
             holder.date.text = formatter2.format(date)
 
             // Change RecyclerView items
-            val workoutExerciseAdapter = DiaryExerciseAdapter(ct, MainActivity.dataStorage.workoutDays[position].Exercises)
+            val workoutExerciseAdapter = DiaryExerciseAdapter(
+                ct,
+                ArrayList(Workout_Days!![position].Exercises ?: ArrayList()),
+                onExerciseClick = { exercisePosition ->
+                    onExerciseClick?.invoke(Workout_Days!![position], exercisePosition)
+                },
+                categoryFor = categoryFor
+            )
             holder.recyclerView.adapter = workoutExerciseAdapter
             holder.recyclerView.layoutManager = LinearLayoutManager(ct)
         } catch (e: ParseException) {
@@ -72,11 +85,7 @@ class DiaryAdapter(ct: Context?, Workout_Days: ArrayList<WorkoutDay>?) : Recycle
     }
 
     fun navigateToDay(position: Int) {
-        val `in` = Intent(ct, DayActivity::class.java)
-        // Update Date Selected in MainActivity
-        MainActivity.dateSelected = Workout_Days!![position].Date
-        `in`.putExtra("date", Workout_Days!![position].Date)
-        ct!!.startActivity(`in`)
+        onDayClick?.invoke(position)
     }
 
     // Shows Day's Stats
@@ -116,11 +125,7 @@ class DiaryAdapter(ct: Context?, Workout_Days: ArrayList<WorkoutDay>?) : Recycle
 
         // Goto Day Activity
         bt_viewDay.setOnClickListener { view ->
-            val `in` = Intent(ct, DayActivity::class.java)
-            // Update Date Selected in MainActivity
-            MainActivity.dateSelected = Workout_Days!![position].Date
-            `in`.putExtra("date", Workout_Days!![position].Date)
-            ct!!.startActivity(`in`)
+            onDayClick?.invoke(position)
         }
 
         // Delete Day

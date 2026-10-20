@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
-import com.readyplayerai.gainsgoblin.ui.MainActivity
 
 import java.text.DateFormat
 import java.text.ParseException
@@ -23,10 +22,17 @@ import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Date
 
-class ViewPagerWorkoutDayAdapter(ct: Context?, Workout_Days: ArrayList<WorkoutDay>?) : RecyclerView.Adapter<ViewPagerWorkoutDayAdapter.WorkoutDayViewHolder>() {
+class ViewPagerWorkoutDayAdapter(
+    ct: Context?,
+    infiniteDays: List<WorkoutDay>?,
+    realDays: List<WorkoutDay>? = emptyList(),
+    private val onExerciseClick: ((List<WorkoutExercise>, Int) -> Unit)? = null,
+    private val categoryFor: ((String) -> String?)? = null
+) : RecyclerView.Adapter<ViewPagerWorkoutDayAdapter.WorkoutDayViewHolder>() {
 
-    private val Workout_Days = ArrayList(Workout_Days)
+    private val Workout_Days = ArrayList(infiniteDays)
     private val ct = ct
+    private val Real_Days: List<WorkoutDay> = realDays ?: emptyList()
 
     @NonNull
     override fun onCreateViewHolder(@NonNull parent: ViewGroup, viewType: Int): WorkoutDayViewHolder {
@@ -44,15 +50,16 @@ class ViewPagerWorkoutDayAdapter(ct: Context?, Workout_Days: ArrayList<WorkoutDa
         val Date_Str1 = Workout_Days[position].Date
 
         // Find which exercises were performed that given date
-        var Today_Execrises = ArrayList<WorkoutExercise>()
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            if (Date_Str1 == MainActivity.dataStorage.workoutDays[i].Date) {
-                Today_Execrises = MainActivity.dataStorage.workoutDays[i].Exercises!!
-            }
-        }
+        val Today_Execrises: ArrayList<WorkoutExercise> =
+            Real_Days.firstOrNull { it.Date == Date_Str1 }?.Exercises ?: ArrayList()
 
         // Set Recycler View
-        val workoutExerciseAdapter = ViewPagerExerciseAdapter(ct, Today_Execrises)
+        val workoutExerciseAdapter = ViewPagerExerciseAdapter(
+            ct,
+            Today_Execrises,
+            onExerciseClick = { position -> onExerciseClick?.invoke(Today_Execrises, position) },
+            categoryFor = categoryFor
+        )
         holder.recyclerView_Main.adapter = workoutExerciseAdapter
         holder.recyclerView_Main.layoutManager = LinearLayoutManager(ct)
 

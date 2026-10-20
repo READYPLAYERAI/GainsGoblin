@@ -19,9 +19,6 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.readyplayerai.gainsgoblin.ExercisePersonalStats
 import com.readyplayerai.gainsgoblin.R
-import com.readyplayerai.gainsgoblin.model.WorkoutSet
-import com.readyplayerai.gainsgoblin.ui.MainActivity
-import com.readyplayerai.gainsgoblin.ui.PersonalRecordsActivity
 
 import java.util.ArrayList
 import java.util.Iterator
@@ -29,11 +26,16 @@ import java.util.Locale
 import kotlin.math.floor
 
 // Adapter for WorkoutExercise Class
-class ExerciseStatsAdapter(ct: Context?, exercisePersonalStats: ArrayList<ExercisePersonalStats>?) : RecyclerView.Adapter<ExerciseStatsAdapter.MyViewHolder>() , Filterable {
+class ExerciseStatsAdapter(
+    ct: Context?,
+    ExerciseStats: ArrayList<ExercisePersonalStats>?,
+    private val onFavoriteToggle: ((Int) -> Unit)? = null,
+    private val categoryFor: ((String) -> String?)? = null
+) : RecyclerView.Adapter<ExerciseStatsAdapter.MyViewHolder>() , Filterable {
 
     private val ct = ct
-    private val exercisePersonalStats = ArrayList(exercisePersonalStats)
-    private val exercisePersonalStatsFull = ArrayList(exercisePersonalStats)
+    private val exercisePersonalStats = ArrayList(ExerciseStats)
+    private val exercisePersonalStatsFull = ArrayList(ExerciseStats)
 
     @NonNull
     override fun onCreateViewHolder(@NonNull parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -139,26 +141,19 @@ class ExerciseStatsAdapter(ct: Context?, exercisePersonalStats: ArrayList<Exerci
             } else if (item.getItemId() == R.id.favorite) {
                 System.out.println("Favorite Clicked")
 
-                var exercise_name = exercisePersonalStats!![position].exerciseName
-
-                var isFavorite = MainActivity.dataStorage.isExerciseFavorite(exercise_name)
-
-                MainActivity.dataStorage.setFavoriteExercise(exercise_name, isFavorite != true)
-
-                isFavorite = MainActivity.dataStorage.isExerciseFavorite(exercise_name)
-
-                PersonalRecordsActivity.calculatePersonalRecords()
-
-                setCategoryIconTint(holder, exercise_name!!, isFavorite, position)
+                onFavoriteToggle?.invoke(position)
             }
             false
         })
         popupMenu.show()
     }
 
+    /** Exercise name at [position] in the (possibly filtered) list; null when out of range. */
+    fun nameAt(position: Int): String? = exercisePersonalStats.getOrNull(position)?.exerciseName
+
     // Simple
     fun setCategoryIconTint(holder: ExerciseStatsAdapter.MyViewHolder, exercise_name: String, isFavorite: Boolean?, position: Int) {
-        val exercise_category = MainActivity.dataStorage.getExerciseCategory(exercise_name)
+        val exercise_category = categoryFor?.invoke(exercise_name) ?: ""
 
         if (isFavorite != true) {
             holder.favoriteButton.setImageResource(R.drawable.ic_brightness_1_fill1_wght400_grad0_opsz20)

@@ -1,7 +1,9 @@
 package com.readyplayerai.gainsgoblin.ui
 
+import androidx.activity.viewModels
 import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 
 import android.content.Intent
 import android.os.Bundle
@@ -15,9 +17,12 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Toast
 
-import com.readyplayerai.gainsgoblin.model.Exercise
 import com.readyplayerai.gainsgoblin.R
 
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+
+@AndroidEntryPoint
 class CustomExerciseActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     var selected_category: String? = null
@@ -39,6 +44,8 @@ class CustomExerciseActivity : AppCompatActivity(), AdapterView.OnItemSelectedLi
         et_exercise_name = findViewById<EditText>(R.id.et_exercise_name)
     }
 
+    private val viewModel: CustomExerciseViewModel by viewModels()
+
     // Menu Stuff
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         val inflater = getMenuInflater()
@@ -48,15 +55,14 @@ class CustomExerciseActivity : AppCompatActivity(), AdapterView.OnItemSelectedLi
 
     override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {
         if (item.itemId == R.id.save) {
-            if (!MainActivity.dataStorage.doesExerciseExist(et_exercise_name!!.text.toString())) {
-                val new_exercise = Exercise(et_exercise_name!!.text.toString(), selected_category!!)
-                MainActivity.dataStorage.knownExercises.add(new_exercise)
-                MainActivity.dataStorage.saveKnownExerciseData(getApplicationContext())
-                Toast.makeText(getApplicationContext(), "Exercise Saved", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this, ExercisesActivity::class.java)
-                startActivity(intent)
-            } else {
-                Toast.makeText(getApplicationContext(), "Exercise Already Exists", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                if (viewModel.addExercise(et_exercise_name!!.text.toString(), selected_category)) {
+                    Toast.makeText(applicationContext, "Exercise Saved", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this@CustomExerciseActivity, ExercisesActivity::class.java)
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(applicationContext, "Exercise Already Exists", Toast.LENGTH_SHORT).show()
+                }
             }
         }
         return super.onOptionsItemSelected(item)

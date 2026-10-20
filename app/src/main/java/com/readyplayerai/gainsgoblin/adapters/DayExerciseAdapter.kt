@@ -1,7 +1,6 @@
 package com.readyplayerai.gainsgoblin.adapters
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
@@ -16,16 +15,21 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
-import com.readyplayerai.gainsgoblin.ui.AddExerciseActivity
-import com.readyplayerai.gainsgoblin.ui.MainActivity
 
 import java.util.ArrayList
 
 // Adapter for WorkoutExercise Class
-class DayExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?) : RecyclerView.Adapter<DayExerciseAdapter.MyViewHolder>() {
+class DayExerciseAdapter(
+    ct: Context?,
+    Exercises: ArrayList<WorkoutExercise>?,
+    onEditClick: ((Int) -> Unit)? = null,
+    categoryFor: ((String) -> String?)? = null
+) : RecyclerView.Adapter<DayExerciseAdapter.MyViewHolder>() {
 
     private val ct = ct
     private val Exercises = ArrayList(Exercises)
+    private val onEditClick = onEditClick
+    private val categoryFor = categoryFor
 
     @NonNull
     override fun onCreateViewHolder(@NonNull parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -54,7 +58,7 @@ class DayExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?) :
 
     // Simple
     fun setCategoryIconTint(holder: MyViewHolder, exercise_name: String) {
-        val exercise_category = MainActivity.dataStorage.getExerciseCategory(exercise_name)
+        val exercise_category = categoryFor?.invoke(exercise_name) ?: ""
 
         if (exercise_category == "Shoulders") {
             holder.imageView.setColorFilter(Color.argb(255, 0, 116, 189)) // Primary Color
@@ -77,9 +81,7 @@ class DayExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?) :
 
     // Go to Add Exercise
     fun startIntent(position: Int) {
-        val `in` = Intent(ct, AddExerciseActivity::class.java)
-        `in`.putExtra("exercise", Exercises[position].Exercise)
-        ct!!.startActivity(`in`)
+        onEditClick?.invoke(position)
     }
 
     override fun getItemCount(): Int {

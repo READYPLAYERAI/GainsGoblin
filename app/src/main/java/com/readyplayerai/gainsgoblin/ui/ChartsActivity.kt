@@ -1,7 +1,9 @@
 package com.readyplayerai.gainsgoblin.ui
 
+import androidx.activity.viewModels
 import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 
 import android.content.Intent
 import android.os.Bundle
@@ -12,10 +14,14 @@ import android.view.View
 import android.widget.ScrollView
 
 import com.readyplayerai.gainsgoblin.R
+import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.ui.charts.BarChartView
 import com.readyplayerai.gainsgoblin.ui.charts.PieChartView
 import com.readyplayerai.gainsgoblin.ui.charts.PieSlice
 import com.google.android.material.bottomnavigation.BottomNavigationView
+
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 import java.util.ArrayList
 import java.util.Collections
@@ -24,7 +30,10 @@ import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedHashMap
 
+@AndroidEntryPoint
 class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
+
+    private val viewModel: ChartsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,36 +49,40 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
     }
 
     fun onCreateStuff() {
+        lifecycleScope.launch { render(viewModel.freshUiState()) }
+    }
+
+    private fun render(state: ChartsUiState) {
         // Bottom Navigation Bar Intents
         val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
         bottomNavigationView.setSelectedItemId(R.id.charts)
         bottomNavigationView.setOnNavigationItemSelectedListener(this)
 
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        if (MainActivity.dataStorage.workoutDays.size == 0) {
+        if (state.days.isEmpty()) {
             scrollView.setVisibility(View.GONE)
         } else {
             scrollView.setVisibility(View.VISIBLE)
         }
 
-        barChartVolumes()
+        barChartVolumes(state.days)
 
-        pieChartWorkouts()
+        pieChartWorkouts(state.days)
 
-        pieChartBodyparts()
+        pieChartBodyparts(state.days)
 
-        piChartExercises()
+        piChartExercises(state.days)
     }
 
-    fun barChartVolumes() {
+    fun barChartVolumes(days: List<WorkoutDay>) {
         // Bar Chart
         val barChart = findViewById<BarChartView>(R.id.barChart)
 
         // Add volumes
         val workouts = ArrayList<Float>()
 
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            workouts.add(MainActivity.dataStorage.workoutDays[i].DayVolume!!.toFloat())
+        for (i in 0 until days.size) {
+            workouts.add(days[i].DayVolume!!.toFloat())
         }
 
         // Make it invisible because otherwise it looks like shit
@@ -92,12 +105,12 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         barChart.setData(volumes)
     }
 
-    fun pieChartWorkouts() {
+    fun pieChartWorkouts(days: List<WorkoutDay>) {
         // Find Workout Years
         val Years = HashSet<String>()
 
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            val date = MainActivity.dataStorage.workoutDays[i].Date
+        for (i in 0 until days.size) {
+            val date = days[i].Date
             val year = date!!.substring(0, 4)
             Years.add(year)
         }
@@ -111,8 +124,8 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         }
 
         // Calculate number of workouts per year
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            val date = MainActivity.dataStorage.workoutDays[i].Date
+        for (i in 0 until days.size) {
+            val date = days[i].Date
             val year = date!!.substring(0, 4)
 
             var workouts = Years_Workouts[year]!!
@@ -135,13 +148,13 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         pieChart.setData(slices)
     }
 
-    fun pieChartBodyparts() {
+    fun pieChartBodyparts(days: List<WorkoutDay>) {
         // Find Workout Years
         val Bodyparts = HashSet<String>()
 
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
-                val Exercise = MainActivity.dataStorage.workoutDays[i].Sets!![j].category
+        for (i in 0 until days.size) {
+            for (j in 0 until days[i].Sets!!.size) {
+                val Exercise = days[i].Sets!![j].category
                 Bodyparts.add(Exercise!!)
             }
         }
@@ -155,9 +168,9 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         }
 
         // Calculate number of workouts per year
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
-                val Exercise = MainActivity.dataStorage.workoutDays[i].Sets!![j].category!!
+        for (i in 0 until days.size) {
+            for (j in 0 until days[i].Sets!!.size) {
+                val Exercise = days[i].Sets!![j].category!!
 
                 var Exercise_Workouts = Number_Bodyparts[Exercise]!!
                 Number_Bodyparts.put(Exercise, Exercise_Workouts + 1)
@@ -180,13 +193,13 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         pieChart.setData(slices)
     }
 
-    fun piChartExercises() {
+    fun piChartExercises(days: List<WorkoutDay>) {
         // Find Workout Years
         val Exercises = HashSet<String>()
 
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
-                val Exercise = MainActivity.dataStorage.workoutDays[i].Sets!![j].exerciseName
+        for (i in 0 until days.size) {
+            for (j in 0 until days[i].Sets!!.size) {
+                val Exercise = days[i].Sets!![j].exerciseName
                 Exercises.add(Exercise!!)
             }
         }
@@ -200,9 +213,9 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         }
 
         // Calculate number of workouts per year
-        for (i in 0 until MainActivity.dataStorage.workoutDays.size) {
-            for (j in 0 until MainActivity.dataStorage.workoutDays[i].Sets!!.size) {
-                val Exercise = MainActivity.dataStorage.workoutDays[i].Sets!![j].exerciseName!!
+        for (i in 0 until days.size) {
+            for (j in 0 until days[i].Sets!!.size) {
+                val Exercise = days[i].Sets!![j].exerciseName!!
 
                 var Exercise_Workouts = Number_Exercises[Exercise]!!
                 Number_Exercises.put(Exercise, Exercise_Workouts + 1)
@@ -259,6 +272,13 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         return sortedHashMap
     }
 
+    // Menu Stuff
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater = getMenuInflater()
+        inflater.inflate(R.menu.charts_activity_menu, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
     // Navigates to given activity based on the selected menu item
     override fun onNavigationItemSelected(@NonNull item: MenuItem): Boolean {
         if (item.itemId == R.id.home) {
@@ -283,13 +303,6 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
             overridePendingTransition(0, 0)
         }
         return true
-    }
-
-    // Menu Stuff
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val inflater = getMenuInflater()
-        inflater.inflate(R.menu.charts_activity_menu, menu)
-        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {

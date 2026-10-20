@@ -2,7 +2,6 @@ package com.readyplayerai.gainsgoblin.adapters
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
@@ -20,17 +19,22 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
-import com.readyplayerai.gainsgoblin.ui.AddExerciseActivity
-import com.readyplayerai.gainsgoblin.ui.MainActivity
 
 import java.util.ArrayList
 import kotlin.math.roundToInt
 
 // Adapter for WorkoutExercise Class
-class DiaryExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?) : RecyclerView.Adapter<DiaryExerciseAdapter.MyViewHolder>() {
+class DiaryExerciseAdapter(
+    ct: Context?,
+    Exercises: ArrayList<WorkoutExercise>?,
+    onExerciseClick: ((Int) -> Unit)? = null,
+    categoryFor: ((String) -> String?)? = null
+) : RecyclerView.Adapter<DiaryExerciseAdapter.MyViewHolder>() {
 
     private val ct = ct
     private val Exercises = ArrayList(Exercises)
+    private val onExerciseClick = onExerciseClick
+    private val categoryFor = categoryFor
 
     @NonNull
     override fun onCreateViewHolder(@NonNull parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -176,7 +180,7 @@ class DiaryExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?)
 
     // Simple
     fun setCategoryIconTint(holder: MyViewHolder, exercise_name: String) {
-        val exercise_category = MainActivity.dataStorage.getExerciseCategory(exercise_name)
+        val exercise_category = categoryFor?.invoke(exercise_name) ?: ""
 
         if (exercise_category == "Shoulders") {
             holder.imageView.setColorFilter(Color.argb(255, 0, 116, 189)) // Primary Color
@@ -198,12 +202,7 @@ class DiaryExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?)
     }
 
     fun navigateToExercise(position: Int) {
-        val `in` = Intent(ct, AddExerciseActivity::class.java)
-        `in`.putExtra("exercise", Exercises!![position].Exercise)
-        MainActivity.dateSelected = Exercises!![position].Date // this is required by AddExerciseActivity
-        System.out.println(Exercises!![position].Exercise)
-        System.out.println(MainActivity.dateSelected)
-        ct!!.startActivity(`in`)
+        onExerciseClick?.invoke(position)
     }
 
     // Blatant copy of FitNotes but ohh well ;)
@@ -247,12 +246,7 @@ class DiaryExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?)
 
         // Navigate to AddExercise Activity
         bt_edit_exercise.setOnClickListener { view ->
-            val `in` = Intent(ct, AddExerciseActivity::class.java)
-            `in`.putExtra("exercise", Exercises!![position].Exercise)
-            MainActivity.dateSelected = Exercises!![position].Date // this is required by AddExerciseActivity
-            System.out.println(Exercises!![position].Exercise)
-            System.out.println(MainActivity.dateSelected)
-            ct!!.startActivity(`in`)
+            onExerciseClick?.invoke(position)
         }
 
         bt_close.setOnClickListener { view ->

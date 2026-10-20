@@ -1,61 +1,63 @@
 package com.readyplayerai.gainsgoblin.ui
 
+import androidx.activity.viewModels
 import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
-import android.view.MenuInflater
 import android.view.MenuItem
 import android.widget.Toast
 
 import com.readyplayerai.gainsgoblin.adapters.DiaryAdapter
 import com.readyplayerai.gainsgoblin.R
+import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
+import java.util.ArrayList
+
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+
+@AndroidEntryPoint
 class DiaryActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
 
     // Helper Data Structures
     var recyclerView: RecyclerView? = null
     var diaryAdapter: DiaryAdapter? = null
 
+    private val viewModel: DiaryViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_diary)
 
         System.out.println("DiaryActivity::OnCreate()")
-        System.out.println("Size: " + MainActivity.dataStorage.workoutDays.size)
 
         initActivity()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state -> render(state) }
+            }
+        }
     }
 
     override fun onRestart() {
         super.onRestart()
 
         System.out.println("DiaryActivity::OnRestart()")
-        initActivity()
+        lifecycleScope.launch { render(viewModel.freshUiState()) }
     }
 
     fun initActivity() {
         System.out.println("DiaryActivity::initActivity()")
-
-        // From Day Activity
-        val intent = getIntent()
-        val date_clicked = intent.getStringExtra("date")
-        // String date_clicked = MainActivity.date_selected;
-
-        // If day exists scroll to it otherwise scroll to the last day
-        var position = -1
-
-        if (date_clicked != null) {
-            position = MainActivity.dataStorage.getDayPosition(date_clicked)
-        }
-
-        System.out.println("Date is " + date_clicked + " and position is: " + position)
-        System.out.println("MainActivity.Workout_Days.size(): " + MainActivity.dataStorage.workoutDays.size)
 
         // Bottom Navigation Bar Intents
         val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
@@ -64,16 +66,41 @@ class DiaryActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItem
 
         // Find Recycler View Object
         recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
+    }
+
+    private fun render(state: DiaryUiState) {
+        // From Day Activity
+        val date_clicked = intent.getStringExtra("date")
+
+        System.out.println("Date is " + date_clicked + " and position is: " + state.initialPosition)
+        System.out.println("Size: " + state.days.size)
+        System.out.println("MainActivity.Workout_Days.size(): " + state.days.size)
 
         // Notify User in case of empty diary
-        if (MainActivity.dataStorage.workoutDays.isEmpty()) {
+        if (state.days.isEmpty()) {
             Toast.makeText(this, "Empty Diary", Toast.LENGTH_SHORT).show()
         } else {
-            // So the adapter has correct information
-            MainActivity.dataStorage.calculatePersonalRecords()
-
             // Crash Otherwise
-            diaryAdapter = DiaryAdapter(this, MainActivity.dataStorage.workoutDays)
+            diaryAdapter = DiaryAdapter(
+                this,
+                ArrayList(state.days),
+                onDayClick = { position ->
+                    val day = state.days[position]
+                    day.Date?.let { viewModel.selectDate(it) }
+                    val startIntent = Intent(this, DayActivity::class.java)
+                    startIntent.putExtra("date", day.Date)
+                    startActivity(startIntent)
+                },
+                onExerciseClick = { day, position ->
+                    val ex = day.Exercises!![position]
+                    ex.Date?.let { viewModel.selectDate(it) }
+                    System.out.println(ex.Exercise)
+                    val startIntent = Intent(this, AddExerciseActivity::class.java)
+                    startIntent.putExtra("exercise", ex.Exercise)
+                    startActivity(startIntent)
+                },
+                categoryFor = { name -> exerciseCategoryFor(state.knownExercises, name) }
+            )
             recyclerView!!.setAdapter(diaryAdapter)
 
             val lm = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, true) // last argument (true) is flag for reverse layout
@@ -82,14 +109,14 @@ class DiaryActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItem
             recyclerView!!.setLayoutManager(lm)
 
             // BUG HERE FIX IT SER
-            if (position >= 0) {
+            if (state.initialPosition >= 0) {
                 // Scroll to the selected date
                 System.out.println("Scroll to position")
-//                recyclerView.scrollToPosition(position)
+//                recyclerView.scrollToPosition(state.initialPosition)
             } else {
                 // Scroll to the bottom
                 System.out.println("Scroll to the bottom")
-//                recyclerView.scrollToPosition(MainActivity.Workout_Days.size()-1)
+//                recyclerView.scrollToPosition(state.days.size - 1)
             }
         }
     }

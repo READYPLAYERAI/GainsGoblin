@@ -1,7 +1,6 @@
 package com.readyplayerai.gainsgoblin.adapters
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
@@ -15,13 +14,16 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
-import com.readyplayerai.gainsgoblin.ui.AddExerciseActivity
-import com.readyplayerai.gainsgoblin.ui.MainActivity
 
 import java.util.ArrayList
 
 // Adapter for WorkoutExercise Class
-class ViewPagerExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercise>?) : RecyclerView.Adapter<ViewPagerExerciseAdapter.MyViewHolder>() {
+class ViewPagerExerciseAdapter(
+    ct: Context?,
+    Exercises: ArrayList<WorkoutExercise>?,
+    private val onExerciseClick: ((Int) -> Unit)? = null,
+    private val categoryFor: ((String) -> String?)? = null
+) : RecyclerView.Adapter<ViewPagerExerciseAdapter.MyViewHolder>() {
 
     private val ct = ct
     private val Exercises = ArrayList(Exercises)
@@ -43,12 +45,9 @@ class ViewPagerExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercis
         holder.recyclerView.adapter = workoutSetAdapter
         holder.recyclerView.layoutManager = LinearLayoutManager(ct)
 
-        // Navigate to AddActivity
+        // Navigate to AddActivity (behavior supplied by the Activity)
         holder.cardview_exercise2.setOnClickListener { view ->
-            val `in` = Intent(ct, AddExerciseActivity::class.java)
-            `in`.putExtra("exercise", Exercises[position].Exercise)
-            MainActivity.dateSelected = Exercises[position].Date
-            ct!!.startActivity(`in`)
+            onExerciseClick?.invoke(position)
         }
 
         // Change exercise color accordingly
@@ -57,7 +56,7 @@ class ViewPagerExerciseAdapter(ct: Context?, Exercises: ArrayList<WorkoutExercis
 
     // Simple
     fun setCategoryIconTint(holder: MyViewHolder, exercise_name: String) {
-        val exercise_category = MainActivity.dataStorage.getExerciseCategory(exercise_name)
+        val exercise_category = categoryFor?.invoke(exercise_name) ?: ""
 
         if (exercise_category == "Shoulders") {
             holder.imageView.setColorFilter(Color.argb(255, 0, 116, 189)) // Primary Color

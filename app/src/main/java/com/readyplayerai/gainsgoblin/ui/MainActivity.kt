@@ -1,8 +1,12 @@
 package com.readyplayerai.gainsgoblin.ui
 
+import androidx.activity.viewModels
 import androidx.annotation.NonNull
 import androidx.annotation.Nullable
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
 
 import android.app.Activity
@@ -17,46 +21,44 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.DatePicker
 import android.widget.ProgressBar
+import android.widget.Toast
 
-import com.readyplayerai.gainsgoblin.DataStorage
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.adapters.ViewPagerWorkoutDayAdapter
+import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
+import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormat
-import java.text.Format
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
+
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener, DatePickerDialog.OnDateSetListener {
 
     companion object {
-        @JvmField
-        val dataStorage: DataStorage = DataStorage() // Holds all Gains Goblin data and handles file I/O
-        @JvmField
-        var dateSelected: String? = null // Used for other activities to get the selected date, by default it's set to today
-        @JvmField
-        var viewPager2: ViewPager2? = null // View Pager that is used in main activity
-
         const val READ_REQUEST_CODE: Int = 42
-        @JvmField
-        var EXPORT_FILENAME: String = "gainsgoblin_backup"
-
-        @JvmStatic
-        fun setExportBackupName() {
-            EXPORT_FILENAME = "gainsgoblin"
-            val formatter: Format = SimpleDateFormat("_yyyy-MM-dd_HH:mm:ss")
-            val str_date = formatter.format(Date())
-            EXPORT_FILENAME = EXPORT_FILENAME + str_date
-        }
     }
 
     @JvmField
     var fab: FloatingActionButton? = null
+
+    // Selected `yyyy-MM-dd` date; defaulted to today in [onCreateStuff].
+    private var dateSelected: String? = null
+
+    // The home pager; initialized once the repository reports loaded.
+    private var viewPager2: ViewPager2? = null
+
+    private val viewModel: MainViewModel by viewModels()
+
+    // Guards the one-time pager initialization driven by the state collector.
+    private var pagerNeedsInit = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +73,18 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
         // Hacky way to have the same code run in onRestart() as well
         onCreateStuff()
+
+        // Initialize the pager exactly once, as soon as the repository reports loaded
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    if (state.loaded && pagerNeedsInit) {
+                        pagerNeedsInit = false
+                        initViewPager()
+                    }
+                }
+            }
+        }
     }
 
     // General Initialization Stuff
@@ -99,7 +113,8 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         day = String.format("%02d", i2)
 
         val date_clicked = year + "-" + monthStr + "-" + day
-        MainActivity.dateSelected = date_clicked
+        dateSelected = date_clicked
+        viewModel.selectDate(date_clicked)
 
         // Start Intent
         val intent = Intent(applicationContext, DayActivity::class.java)
@@ -113,8 +128,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     // You guessed it!
     fun initActivity() {
-        setExportBackupName()
-
         // Rename top bar to something sensible
         supportActionBar!!.setTitle(R.string.app_name)
 
@@ -130,32 +143,25 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             } else if (whatToDo == "exportcsv") {
                 // Android 11 and above
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    dataStorage.writeFile(applicationContext)
+                    lifecycleScope.launch {
+                        val result = viewModel.exportCsv()
+                        Toast.makeText(applicationContext, result.message, Toast.LENGTH_LONG).show()
+                    }
                 }
 
                 // Or else nothing comes up
-                initViewPager()
+                lifecycleScope.launch { initViewPager() }
             }
-        } else {
-            // Offline mode: load local data
-            dataStorage.loadWorkoutData(applicationContext)
-            dataStorage.loadKnownExercisesData(applicationContext)
-            initViewPager()
         }
+        // else (normal launch): nothing here, the state collector initializes the pager
     }
 
     override fun onRestart() {
         // This was already there so I am not deleting it
         super.onRestart()
 
-        // Get WorkoutDays from shared preferences
-        dataStorage.loadWorkoutData(applicationContext)
-
-        // Get Known Exercises from shared preferences
-        dataStorage.loadKnownExercisesData(applicationContext)
-
         // After Loading Data Initialize ViewPager
-        initViewPager()
+        lifecycleScope.launch { initViewPager() }
 
         // Bottom Navigation Bar Intents
         val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
@@ -164,72 +170,46 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     }
 
     // Initialize View pager object
-    fun initViewPager() {
-        // Skip creation of empty workouts if you don't have to
-        if (dataStorage.infiniteWorkoutDays.isEmpty() || dataStorage.infiniteWorkoutDays == null) {
-            // "Infinite" Data Structure
-            dataStorage.infiniteWorkoutDays.clear()
-
-            // Find start and End Dates
-            val c = Calendar.getInstance()
-            c.time = Date()
-            c.add(Calendar.YEAR, -5)
-            val startDate = c.time
-            c.add(Calendar.YEAR, +10)
-            val endDate = c.time
-
-            // Create Calendar Objects that represent start and end date
-            val start = Calendar.getInstance()
-            start.time = startDate
-            val end = Calendar.getInstance()
-            end.time = endDate
-
-            // Construct 20 years worth of empty workout days
-            var date = start.time
-            while (start.before(end)) {
-                // Get Date in String format
-                val date_str = SimpleDateFormat("yyyy-MM-dd").format(date)
-
-                // Create new mostly empty object
-                val today = WorkoutDay()
-                today.Date = date_str
-                dataStorage.infiniteWorkoutDays.add(today)
-
-                start.add(Calendar.DATE, 1)
-                date = start.time
-            }
+    private suspend fun initViewPager() {
+        val state = viewModel.freshUiState()
+        if (!state.loaded) {
+            return
         }
 
         // Use View Pager with Infinite Days
         viewPager2 = findViewById(R.id.viewPager2)
-        viewPager2!!.setAdapter(ViewPagerWorkoutDayAdapter(this, dataStorage.infiniteWorkoutDays))
+        viewPager2!!.setAdapter(
+            ViewPagerWorkoutDayAdapter(
+                this,
+                state.infiniteDays,
+                state.realDays,
+                onExerciseClick = { exercises, position ->
+                    val exercise = exercises[position]
+                    val intent = Intent(this, AddExerciseActivity::class.java)
+                    intent.putExtra("exercise", exercise.Exercise)
+                    dateSelected = exercise.Date
+                    exercise.Date?.let { viewModel.selectDate(it) }
+                    startActivity(intent)
+                },
+                categoryFor = { name -> exerciseCategoryFor(state.knownExercises, name) }
+            )
+        )
         viewPager2!!.visibility = View.VISIBLE
-        val today_position = getTodayPosition() // Navigate to today
-        if (today_position >= 0) {
-            viewPager2!!.setCurrentItem(today_position)
+        if (state.todayPosition >= 0) {
+            viewPager2!!.setCurrentItem(state.todayPosition)
         }
 
         viewPager2!!.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
                 super.onPageScrolled(position, positionOffset, positionOffsetPixels)
-                val dateScrolled = dataStorage.infiniteWorkoutDays[position].Date
-                MainActivity.dateSelected = dateScrolled
+                val dateScrolled = state.infiniteDays[position].Date
+                dateSelected = dateScrolled
+                dateScrolled?.let { viewModel.selectDate(it) }
             }
         })
 
         val progressBar = findViewById<ProgressBar>(R.id.progress_bar)
         progressBar.visibility = View.GONE
-    }
-
-    // Returns the position of today's date within the infinite workout days list, or -1 if not found
-    private fun getTodayPosition(): Int {
-        val today_str = SimpleDateFormat("yyyy-MM-dd").format(Date())
-        for (i in dataStorage.infiniteWorkoutDays.indices) {
-            if (dataStorage.infiniteWorkoutDays[i].Date == today_str) {
-                return i
-            }
-        }
-        return -1
     }
 
     // Select a file using the build in file manager
@@ -248,7 +228,14 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             if (data != null) {
                 val uri = data.data
                 if (requestCode == READ_REQUEST_CODE) {
-                    if (dataStorage.readFile(uri!!, applicationContext)) {
+                    lifecycleScope.launch {
+                        val result = viewModel.importCsv(uri!!)
+                        if (!result.success) {
+                            result.error?.let {
+                                Toast.makeText(applicationContext, it, Toast.LENGTH_SHORT).show()
+                            }
+                            Toast.makeText(applicationContext, "Could not locate file " + uri.path, Toast.LENGTH_SHORT).show()
+                        }
                         initViewPager()
                     }
                 }
@@ -292,7 +279,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {
         if (item.itemId == R.id.home) {
-            val today_position = getTodayPosition() // Navigate to today
+            val today_position = viewModel.uiState.value.todayPosition // Navigate to today
             if (today_position >= 0) {
                 viewPager2!!.setCurrentItem(today_position)
             }

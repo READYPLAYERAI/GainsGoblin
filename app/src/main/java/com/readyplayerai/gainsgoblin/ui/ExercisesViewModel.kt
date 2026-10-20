@@ -1,0 +1,71 @@
+package com.readyplayerai.gainsgoblin.ui
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.readyplayerai.gainsgoblin.data.AppState
+import com.readyplayerai.gainsgoblin.data.WorkoutRepository
+import com.readyplayerai.gainsgoblin.model.Exercise
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+/**
+ * UI state for the Exercises list screen.
+ *
+ * [date] carries the legacy (unused) `"date"` intent extra purely for parity.
+ */
+data class ExercisesUiState(
+    val loaded: Boolean = false,
+    val knownExercises: List<Exercise> = emptyList(),
+    val date: String? = null
+)
+
+/**
+ * Backs [ExercisesActivity].
+ *
+ * Maps [WorkoutRepository.appState]'s known exercises. The Activity renders on
+ * create and restart only (legacy parity), so it does not collect this flow for
+ * re-rendering mid-session.
+ */
+@HiltViewModel
+class ExercisesViewModel @Inject constructor(
+    private val repository: WorkoutRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val date: String? = savedStateHandle.get<String>("date")
+
+    private val _uiState = MutableStateFlow(mapAppState(repository.appState.value))
+
+    val uiState: StateFlow<ExercisesUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            repository.appState.collect { _uiState.value = mapAppState(it) }
+        }
+    }
+
+    /** Fresh, never-stale state straight from the repository. */
+    suspend fun freshUiState(): ExercisesUiState = mapAppState(repository.currentAppState())
+
+    private fun mapAppState(state: AppState): ExercisesUiState = ExercisesUiState(
+        loaded = state.loaded,
+        knownExercises = state.knownExercises,
+        date = date
+    )
+
+    suspend fun editExercise(oldName: String, newName: String, newBodyPart: String?) {
+        repository.editExercise(oldName, newName, newBodyPart)
+    }
+
+    suspend fun deleteExercise(name: String) {
+        repository.deleteExercise(name)
+    }
+
+    suspend fun addExercise(name: String, category: String?): Boolean =
+        repository.addExercise(name, category)
+}
