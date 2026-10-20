@@ -18,7 +18,8 @@ import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.ui.charts.BarChartView
 import com.readyplayerai.gainsgoblin.ui.charts.PieChartView
 import com.readyplayerai.gainsgoblin.ui.charts.PieSlice
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
 
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -31,13 +32,15 @@ import java.util.HashSet
 import java.util.LinkedHashMap
 
 @AndroidEntryPoint
-class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
+class ChartsActivity : AppCompatActivity() {
 
     private val viewModel: ChartsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_charts)
+
+        setupBottomNavBar(BottomNavTab.CHARTS)
 
         // Basic Initialization
         onCreateStuff()
@@ -53,11 +56,6 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
     }
 
     private fun render(state: ChartsUiState) {
-        // Bottom Navigation Bar Intents
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
-        bottomNavigationView.setSelectedItemId(R.id.charts)
-        bottomNavigationView.setOnNavigationItemSelectedListener(this)
-
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
         if (state.days.isEmpty()) {
             scrollView.setVisibility(View.GONE)
@@ -277,32 +275,6 @@ class ChartsActivity : AppCompatActivity(), BottomNavigationView.OnNavigationIte
         val inflater = getMenuInflater()
         inflater.inflate(R.menu.charts_activity_menu, menu)
         return super.onCreateOptionsMenu(menu)
-    }
-
-    // Navigates to given activity based on the selected menu item
-    override fun onNavigationItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.home) {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.exercises) {
-            val intent = Intent(this, ExercisesActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.diary) {
-            val intent = Intent(this, DiaryActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.charts) {
-            val intent = Intent(this, ChartsActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.me) {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        }
-        return true
     }
 
     override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {

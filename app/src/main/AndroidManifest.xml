@@ -30,8 +30,7 @@
             android:label="Day" />
         <activity
             android:name=".ui.SettingsActivity"
-            android:label="Settings"
-            android:parentActivityName=".ui.MainActivity" />
+            android:label="Settings" />
         <activity
             android:name=".ui.CalculatorActivity"
             android:label="Plate Calculator" />

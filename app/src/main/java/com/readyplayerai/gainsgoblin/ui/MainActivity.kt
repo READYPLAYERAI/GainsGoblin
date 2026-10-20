@@ -27,7 +27,8 @@ import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.adapters.ViewPagerWorkoutDayAdapter
 import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,7 +41,7 @@ import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener, DatePickerDialog.OnDateSetListener {
+class MainActivity : AppCompatActivity(), DatePickerDialog.OnDateSetListener {
 
     companion object {
         const val READ_REQUEST_CODE: Int = 42
@@ -91,10 +92,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     fun onCreateStuff() {
         initActivity()
 
-        // Bottom Navigation Bar Intents
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
-        bottomNavigationView.setSelectedItemId(R.id.home)
-        bottomNavigationView.setOnNavigationItemSelectedListener(this)
+        setupBottomNavBar(BottomNavTab.HOME) { dateSelected }
 
         // Date selected is by default today
         val date_clicked = Date()
@@ -162,11 +160,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
         // After Loading Data Initialize ViewPager
         lifecycleScope.launch { initViewPager() }
-
-        // Bottom Navigation Bar Intents
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
-        bottomNavigationView.setSelectedItemId(R.id.home)
-        bottomNavigationView.setOnNavigationItemSelectedListener(this)
     }
 
     // Initialize View pager object
@@ -241,33 +234,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                 }
             }
         }
-    }
-
-    // Navigates to given activity based on the selected menu item
-    override fun onNavigationItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.home) {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.exercises) {
-            val intent = Intent(this, ExercisesActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.diary) {
-            val intent = Intent(this, DiaryActivity::class.java)
-            intent.putExtra("date", dateSelected)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.charts) {
-            val intent = Intent(this, ChartsActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.me) {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        }
-        return true
     }
 
     // Menu Stuff

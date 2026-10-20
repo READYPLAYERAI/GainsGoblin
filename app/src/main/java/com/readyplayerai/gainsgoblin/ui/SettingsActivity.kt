@@ -19,6 +19,8 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 
 import com.readyplayerai.gainsgoblin.R
+import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
 
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -35,10 +37,7 @@ class SettingsActivity : AppCompatActivity() {
                 .beginTransaction()
                 .replace(R.id.settings, SettingsFragment())
                 .commit()
-        val actionBar = getSupportActionBar()
-        if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true)
-        }
+        setupBottomNavBar(BottomNavTab.SETTINGS)
     }
 
     /**

@@ -16,7 +16,8 @@ import android.view.inputmethod.EditorInfo
 
 import com.readyplayerai.gainsgoblin.adapters.ExerciseAdapter
 import com.readyplayerai.gainsgoblin.R
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
+import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
 
 import java.util.ArrayList
 
@@ -24,7 +25,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class ExercisesActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
+class ExercisesActivity : AppCompatActivity() {
 
     var recyclerView: RecyclerView? = null
     var exerciseAdapter: ExerciseAdapter? = null
@@ -35,6 +36,8 @@ class ExercisesActivity : AppCompatActivity(), BottomNavigationView.OnNavigation
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_exercises)
+
+        setupBottomNavBar(BottomNavTab.EXERCISES)
 
         onCreateStuff()
     }
@@ -52,11 +55,6 @@ class ExercisesActivity : AppCompatActivity(), BottomNavigationView.OnNavigation
     private fun render(state: ExercisesUiState) {
         // Intent from DayActivity (unused legacy field, kept for parity)
         date_clicked = state.date
-
-        // Bottom Navigation Bar Intents
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
-        bottomNavigationView.setSelectedItemId(R.id.exercises)
-        bottomNavigationView.setOnNavigationItemSelectedListener(this)
 
         // Find Recycler View Object
         recyclerView = findViewById<RecyclerView>(R.id.recycler_view_exercises)
@@ -101,31 +99,6 @@ class ExercisesActivity : AppCompatActivity(), BottomNavigationView.OnNavigation
             }
         })
 
-        return true
-    }
-
-    override fun onNavigationItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.home) {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.exercises) {
-            val intent = Intent(this, ExercisesActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.diary) {
-            val intent = Intent(this, DiaryActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.charts) {
-            val intent = Intent(this, ChartsActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        } else if (item.itemId == R.id.me) {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        }
         return true
     }
 

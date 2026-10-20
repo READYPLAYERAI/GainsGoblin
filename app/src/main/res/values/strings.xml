@@ -26,5 +26,10 @@
         <item>Abs</item>
     </string-array>
 
+    <string name="nav_diary">Diary</string>
+    <string name="nav_exercises">Exercises</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_charts">Charts</string>
+    <string name="nav_settings">Settings</string>
 
 </resources>

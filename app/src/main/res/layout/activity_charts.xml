@@ -451,20 +451,11 @@
     </ScrollView>
 
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
+    <androidx.compose.ui.platform.ComposeView
         android:id="@+id/bottom_navigation_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        app:backgroundTint="@color/cardview_light_background"
-        app:elevation="0dp"
-        app:itemHorizontalTranslationEnabled="false"
-        app:itemIconSize="24dp"
-        app:itemIconTint="@drawable/tab_color"
-        app:itemTextColor="@drawable/tab_color"
-        app:labelVisibilityMode="unlabeled"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/bottom_navigation_menu" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 
 
