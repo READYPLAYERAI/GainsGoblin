@@ -17,9 +17,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-// Fixed brand palette for the seven body-part categories. Light values match the
-// legacy single-palette map in ui/compose/home/HomeDayPage.kt; this component owns
-// its own constants and never reads MaterialTheme.colorScheme.
+// Fixed brand palette for the seven body-part categories: the single source of
+// category colors app-wide. This component owns its own constants and never reads
+// MaterialTheme.colorScheme.
 
 private val LightCategoryColors: Map<String, Color> = mapOf(
     "chest" to Color(0xFF5C589D),

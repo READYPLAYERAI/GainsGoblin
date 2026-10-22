@@ -40,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -56,26 +55,13 @@ import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
 import com.readyplayerai.gainsgoblin.model.WorkoutSet
+import com.readyplayerai.gainsgoblin.ui.compose.CategoryMarker
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
 
 private val TNUM = TextStyle(fontFeatureSettings = "tnum")
-
-// Current app category colors (decision 2026-10-22: keep, redesign is out of scope).
-private val categoryColors = mapOf(
-    "Shoulders" to Color(0xFF0074BD),
-    "Back" to Color(0xFF28B0C0),
-    "Chest" to Color(0xFF5C589D),
-    "Biceps" to Color(0xFFFF3232),
-    "Triceps" to Color(0xFFCC9A00),
-    "Legs" to Color(0xFFD41961),
-    "Abs" to Color(0xFFFF99AB),
-)
-
-private fun categoryColor(category: String?): Color =
-    categoryColors[category] ?: Color(0xFF343A40)
 
 private fun tnum(size: androidx.compose.ui.unit.TextUnit, weight: FontWeight? = null) =
     if (weight == null) TNUM.copy(fontSize = size) else TNUM.copy(fontSize = size, fontWeight = weight)
@@ -167,12 +153,7 @@ private fun ExerciseHeader(exercise: WorkoutExercise, category: String?) {
             .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(18.dp)
-                .clip(CircleShape)
-                .background(categoryColor(category)),
-        )
+        CategoryMarker(category = category, size = 18.dp)
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
