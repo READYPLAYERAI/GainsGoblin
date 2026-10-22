@@ -72,6 +72,8 @@ internal const val FEED_MIN_DELTA = 0.1f
  * @param childScroll the page's inner vertical scroll state (its edge is the day boundary).
  * @param pageCount total number of pages, used to clamp fling targets.
  * @param scope scope used to settle the pager after a fling.
+ * @param pageScrolls per-page inner scroll states (keyed by pager index) so the arrival
+ *   day can be reset to its top before the pager settles.
  */
 @Composable
 internal fun rememberDayBoundaryPagingConnection(
@@ -79,7 +81,8 @@ internal fun rememberDayBoundaryPagingConnection(
     childScroll: ScrollState,
     pageCount: Int,
     scope: CoroutineScope,
-): NestedScrollConnection = remember(childScroll, pagerState, pageCount) {
+    pageScrolls: Map<Int, ScrollState>,
+): NestedScrollConnection = remember(childScroll, pagerState, pageCount, pageScrolls) {
     object : NestedScrollConnection {
         var ema = 0f
         var lastT = 0L
@@ -175,7 +178,13 @@ internal fun rememberDayBoundaryPagingConnection(
                 pagerState.currentPage
             }
             scope.launch {
-                pagerState.animateScrollToPage(target.coerceIn(0, pageCount - 1))
+                val clampedTarget = target.coerceIn(0, pageCount - 1)
+                // A day change lands expanded: reset the arrival day to its top before the
+                // settle animation (a release back onto the same day keeps its place).
+                if (clampedTarget != pagerState.settledPage) {
+                    pageScrolls[clampedTarget]?.scrollTo(0)
+                }
+                pagerState.animateScrollToPage(clampedTarget)
             }
             return available
         }

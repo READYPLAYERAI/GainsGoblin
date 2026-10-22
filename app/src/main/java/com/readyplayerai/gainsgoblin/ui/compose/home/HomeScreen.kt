@@ -161,6 +161,7 @@ fun HomeScreen(
                     collapseFraction = collapseFraction,
                     pagerState = pagerState,
                     onPillTap = { index -> scrollToDay(index) },
+                    pageScrolls = pageScrolls,
                 )
             }
         },
@@ -181,6 +182,7 @@ fun HomeScreen(
                 childScroll = st,
                 pageCount = uiState.infiniteDays.size,
                 scope = scope,
+                pageScrolls = pageScrolls,
             )
             val isRestDay = realDay?.Exercises.isNullOrEmpty()
             val topInsetPx = with(density) { topInset.toPx() }

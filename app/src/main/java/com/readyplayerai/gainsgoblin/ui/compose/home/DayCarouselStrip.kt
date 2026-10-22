@@ -3,6 +3,7 @@ package com.readyplayerai.gainsgoblin.ui.compose.home
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -123,6 +124,7 @@ fun DayCarouselStrip(
     collapseFraction: Float,
     pagerState: PagerState,
     onPillTap: (Int) -> Unit,
+    pageScrolls: Map<Int, ScrollState>,
     modifier: Modifier = Modifier,
 ) {
     if (days.isEmpty()) return
@@ -220,11 +222,14 @@ fun DayCarouselStrip(
                             change.consume()
                             scrubPosition = (scrubPosition - dragAmountPx / dayPitchPx)
                                 .coerceIn(0f, days.lastIndex.toFloat())
-                            // Snap the pager to the scrubbed day's page.
+                            // Snap the pager to the scrubbed day's page; a day change lands
+                            // at the top of that day (re-scrubbing the current day keeps its place).
                             scope.launch {
-                                pagerState.scrollToPage(
-                                    scrubPosition.roundToInt().coerceIn(0, days.lastIndex),
-                                )
+                                val target = scrubPosition.roundToInt().coerceIn(0, days.lastIndex)
+                                if (target != pagerState.settledPage) {
+                                    pageScrolls[target]?.scrollTo(0)
+                                }
+                                pagerState.scrollToPage(target)
                             }
                         },
                         onDragEnd = {
