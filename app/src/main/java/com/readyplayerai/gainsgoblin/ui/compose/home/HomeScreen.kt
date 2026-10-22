@@ -1,12 +1,17 @@
 package com.readyplayerai.gainsgoblin.ui.compose.home
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -17,13 +22,12 @@ import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,6 +36,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -47,12 +52,13 @@ import java.util.Locale
 import java.util.TimeZone
 
 /**
- * The Home screen: a loading gate and a single continuous vertical journal feed,
- * newest-first, with today pinned at index 0 and the past flowing down. A flexible
- * app bar collapses via Material 3 nested scroll as the feed scrolls, and its
- * title/subtitle track the day currently at the top of the feed. A day carousel
- * strip sits under the flexible app bar, synced to the feed's top day (same
- * design as the old pager, now driving a vertical feed).
+ * The Home screen: a loading gate and a TikTok-style full-screen day pager, newest-first,
+ * with today as page 0 and the past flowing down. Each day is one page whose content scrolls
+ * vertically inside the page first; a day-boundary [androidx.compose.ui.input.nestedscroll.NestedScrollConnection]
+ * adds friction to slow drags and lets fast drags/flings page freely (see
+ * [rememberDayBoundaryPagingConnection]). The flexible app bar collapses from the current
+ * page's inner scroll only, so it stays expanded across page swipes. A day carousel strip sits
+ * under the flexible app bar, synced to the current page.
  *
  * The theme is expected to be provided by the caller (integration functions
  * wrap [com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTheme]).
@@ -81,84 +87,70 @@ fun HomeScreen(
         return
     }
 
-    val listState = rememberLazyListState()
+    val pagerState = rememberPagerState(initialPage = 0) { uiState.infiniteDays.size }
     val scope = rememberCoroutineScope()
-    val behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val pageScrolls = remember { mutableStateMapOf<Int, ScrollState>() }
     val density = LocalDensity.current
-    // Collapse travel = app bar (152dp -> 64dp) + day carousel strip (66dp -> 0).
-    val headerTravelPx =
-        with(density) { -((152.dp - 64.dp) + DayCarouselStripHeight).toPx() }
-
-    // True while a programmatic arrival flight runs (see scrollToDay); the SideEffect
-    // below must not re-apply the travel limit mid-flight.
-    var arrivalInFlight by remember { mutableStateOf(false) }
-
-    SideEffect {
-        if (!arrivalInFlight && behavior.state.heightOffsetLimit != headerTravelPx) {
-            behavior.state.heightOffsetLimit = headerTravelPx
-        }
-    }
+    // Positive magnitude of bar travel: app bar 152dp -> 64dp + strip 66dp -> 0.
+    val barTravelPx = with(density) { ((152.dp - 64.dp) + DayCarouselStripHeight).toPx() }
 
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // The day currently at the top of the feed (index 0 = today).
-    val topDayIndex by remember(uiState.infiniteDays) {
-        derivedStateOf {
-            listState.firstVisibleItemIndex.coerceIn(0, uiState.infiniteDays.lastIndex)
-        }
-    }
-    val topDay: WorkoutDay by remember(uiState.infiniteDays) {
-        derivedStateOf { uiState.infiniteDays[topDayIndex] }
-    }
+    // The day currently at the top of the pager (index 0 = today).
+    val topDayIndex = pagerState.currentPage.coerceIn(0, uiState.infiniteDays.lastIndex)
+    val topDay: WorkoutDay = uiState.infiniteDays[topDayIndex]
 
-    // Explicit arrivals (strip pill taps, picker confirm, HOME reselect)
-    // land expanded and exactly on the day — design rule 4 from the old pager. While the
-    // flight runs the scroll behavior is frozen (limit 0 = nothing for nested scroll to
-    // consume), so exitUntilCollapsed can't spend part of the flight collapsing the bar
-    // and short-landing the arrival.
-    fun scrollToDay(index: Int) {
-        scope.launch {
-            arrivalInFlight = true
-            try {
-                behavior.state.heightOffsetLimit = 0f
-                behavior.state.heightOffset = 0f
-                listState.animateScrollToItem(index)
-            } finally {
-                arrivalInFlight = false
-                behavior.state.heightOffsetLimit = headerTravelPx
+    // Manual collapse: only the current page's inner scroll drives the bar, so page swipes
+    // never move it.
+    val collapseFraction by remember(pageScrolls, pagerState) {
+        derivedStateOf {
+            val st = pageScrolls[pagerState.currentPage]
+            if (st == null || barTravelPx <= 0f) {
+                0f
+            } else {
+                (st.value / barTravelPx).coerceIn(0f, 1f)
             }
         }
     }
 
-    // Notify the host (MainActivity persists selectedDate) whenever the top day changes.
-    LaunchedEffect(listState, uiState.infiniteDays) {
-        snapshotFlow { topDay.Date }
-            .distinctUntilChanged()
-            .collect { date -> date?.let(onSelectDate) }
+    // Explicit arrivals (strip pill taps, picker confirm, HOME reselect) land expanded and
+    // exactly on the day.
+    fun scrollToDay(index: Int) {
+        scope.launch {
+            pagerState.animateScrollToPage(index)
+            pageScrolls[index]?.scrollTo(0) // expand the bar on arrival
+        }
     }
 
-    // Bottom-nav HOME reselect hook (Step 3 wires the producer; null = disabled).
+    // Notify the host (MainActivity persists selectedDate) whenever the top day changes.
+    LaunchedEffect(pagerState, uiState.infiniteDays) {
+        snapshotFlow { pagerState.currentPage }
+            .distinctUntilChanged()
+            .collect { index ->
+                uiState.infiniteDays.getOrNull(index)?.Date?.let(onSelectDate)
+            }
+    }
+
+    // Bottom-nav HOME reselect hook (null = disabled).
     LaunchedEffect(scrollToTopTick) {
         scrollToTopTick?.collect { tick -> if (tick > 0) scrollToDay(0) }
     }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(behavior.nestedScrollConnection),
+        modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             Column {
                 HomeAppBar(
                     // While collapsed the date subtitle is gone, so the title carries the date
                     // ("Tuesday, Oct 20, 2026"); expanded keeps the big weekday-only title.
-                    weekdayTitle = if (behavior.state.collapsedFraction >= 0.5f) {
+                    weekdayTitle = if (collapseFraction >= 0.5f) {
                         weekdayPlusShortDateOf(topDay.Date)
                     } else {
                         weekdayOf(topDay.Date)
                     },
                     fullDate = fullDateOf(topDay.Date),
-                    collapseFraction = behavior.state.collapsedFraction,
+                    collapseFraction = collapseFraction,
                     onDateIconClick = { showDatePicker = true },
                 )
                 DayCarouselStrip(
@@ -166,31 +158,72 @@ fun HomeScreen(
                     // Descending window: today is index 0.
                     todayIndex = 0,
                     activeIndex = topDayIndex,
-                    collapseFraction = behavior.state.collapsedFraction,
-                    feedListState = listState,
+                    collapseFraction = collapseFraction,
+                    pagerState = pagerState,
                     onPillTap = { index -> scrollToDay(index) },
                 )
             }
         },
     ) { innerPadding ->
-        LazyColumn(
-            state = listState,
+        val topInset = innerPadding.calculateTopPadding()
+        VerticalPager(
+            state = pagerState,
+            userScrollEnabled = false,
+            pageNestedScrollConnection = NoOpNestedScrollConnection,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding(),
-                bottom = innerPadding.calculateBottomPadding() + 24.dp,
-            ),
-        ) {
-            items(
-                uiState.infiniteDays,
-                key = { day -> day.Date ?: System.identityHashCode(day).toString() },
-            ) { day ->
-                HomeDaySection(
-                    day = day,
-                    realDay = uiState.realDays.firstOrNull { it.Date == day.Date },
-                    categoryFor = categoryFor,
-                    onExerciseClick = onExerciseClick,
-                )
+        ) { page ->
+            val day = uiState.infiniteDays.getOrNull(page) ?: return@VerticalPager
+            val realDay = uiState.realDays.firstOrNull { it.Date == day.Date }
+            val st = rememberScrollState()
+            pageScrolls[page] = st
+            val conn = rememberDayBoundaryPagingConnection(
+                pagerState = pagerState,
+                childScroll = st,
+                pageCount = uiState.infiniteDays.size,
+                scope = scope,
+            )
+            val isRestDay = realDay?.Exercises.isNullOrEmpty()
+            val topInsetPx = with(density) { topInset.toPx() }
+            var viewportHeightPx by remember { mutableStateOf(0) }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { viewportHeightPx = it.height }
+                    .nestedScroll(conn)
+                    .verticalScroll(st),
+            ) {
+                if (isRestDay) {
+                    // Full-viewport Box centers the rest card; the 1dp tail spacer below keeps
+                    // the page's scrollable in charge of the gesture.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = topInset)
+                            .height(
+                                with(density) {
+                                    (viewportHeightPx - topInsetPx).coerceAtLeast(0f).toDp()
+                                },
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        HomeDaySection(
+                            day = day,
+                            realDay = realDay,
+                            categoryFor = categoryFor,
+                            onExerciseClick = onExerciseClick,
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.height(topInset))
+                    HomeDaySection(
+                        day = day,
+                        realDay = realDay,
+                        categoryFor = categoryFor,
+                        onExerciseClick = onExerciseClick,
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
+                Spacer(Modifier.height(1.dp))
             }
         }
     }

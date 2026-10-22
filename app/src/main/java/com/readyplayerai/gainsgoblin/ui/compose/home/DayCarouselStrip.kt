@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -121,7 +121,7 @@ fun DayCarouselStrip(
     todayIndex: Int,
     activeIndex: Int,
     collapseFraction: Float,
-    feedListState: LazyListState,
+    pagerState: PagerState,
     onPillTap: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -220,16 +220,16 @@ fun DayCarouselStrip(
                             change.consume()
                             scrubPosition = (scrubPosition - dragAmountPx / dayPitchPx)
                                 .coerceIn(0f, days.lastIndex.toFloat())
-                            // Snap the feed to the scrubbed day's section top.
+                            // Snap the pager to the scrubbed day's page.
                             scope.launch {
-                                feedListState.scrollToItem(
+                                pagerState.scrollToPage(
                                     scrubPosition.roundToInt().coerceIn(0, days.lastIndex),
                                 )
                             }
                         },
                         onDragEnd = {
                             scope.launch {
-                                feedListState.animateScrollToItem(
+                                pagerState.animateScrollToPage(
                                     scrubPosition.roundToInt()
                                         .coerceIn(0, days.lastIndex),
                                 )
@@ -237,7 +237,7 @@ fun DayCarouselStrip(
                         },
                         onDragCancel = {
                             scope.launch {
-                                feedListState.animateScrollToItem(
+                                pagerState.animateScrollToPage(
                                     scrubPosition.roundToInt()
                                         .coerceIn(0, days.lastIndex),
                                 )
