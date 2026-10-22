@@ -328,7 +328,7 @@ private fun RestDayEmptyState(day: WorkoutDay) {
                 .fillMaxWidth()
                 .padding(top = 26.dp)
                 .clip(RoundedCornerShape(28.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .padding(horizontal = 26.dp, vertical = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

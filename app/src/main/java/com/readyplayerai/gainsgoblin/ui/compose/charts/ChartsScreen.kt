@@ -233,7 +233,7 @@ private fun ChartCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .padding(20.dp),
     ) {
         Text(title, style = MaterialTheme.typography.titleLarge)

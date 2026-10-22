@@ -198,7 +198,7 @@ private fun SettingsSectionHeader(text: String) {
 
 /**
  * M3 Expressive segmented list item: 16dp rounded container on
- * `surfaceContainerLow`, 64dp min height, leading decorative icon, and a
+ * `surfaceContainerHighest`, 64dp min height, leading decorative icon, and a
  * two-line title + summary.
  */
 @Composable
@@ -213,7 +213,7 @@ private fun SettingsRow(
             .fillMaxWidth()
             .heightIn(min = 64.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable(onClick = onClick),
     ) {
         Row(

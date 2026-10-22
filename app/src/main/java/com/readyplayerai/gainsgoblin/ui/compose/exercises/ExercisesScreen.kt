@@ -298,7 +298,7 @@ fun ExercisesScreen(
 
 /**
  * M3 Expressive segmented list item: 16dp rounded container on
- * `surfaceContainerLow`, 72dp min height, leading category avatar, two-line
+ * `surfaceContainerHighest`, 72dp min height, leading category avatar, two-line
  * text, trailing 48dp "more" button. Long-press and the more button share
  * [onLongClick].
  */
@@ -313,7 +313,7 @@ private fun ExerciseRow(
             .fillMaxWidth()
             .heightIn(min = 72.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Row(

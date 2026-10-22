@@ -430,7 +430,7 @@ private fun StepperGroup(
 
 /**
  * M3 Expressive segmented list item: 16dp rounded container on
- * `surfaceContainerLow`, 64dp min height, weight/reps content and a trailing
+ * `surfaceContainerHighest`, 64dp min height, weight/reps content and a trailing
  * "more" button. Tapping the row enters edit mode.
  */
 @Composable
@@ -445,7 +445,7 @@ private fun SetRow(
             .fillMaxWidth()
             .heightIn(min = 64.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable(onClick = onClick),
     ) {
         Row(
