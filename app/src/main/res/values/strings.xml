@@ -38,6 +38,24 @@
     <string name="top_bar_add_exercise">New exercise</string>
     <string name="top_bar_personal_records">Personal Records</string>
 
+    <string name="exercises_filter_all">All</string>
+    <string name="exercises_search_placeholder">Search exercises</string>
+    <string name="exercises_no_matches_title">No matching exercises</string>
+    <string name="exercises_no_matches_body">Try another chip or search term.</string>
+    <string name="exercises_subtitle_az">%1$d exercises · A–Z</string>
+    <string name="exercises_subtitle_category">%1$d exercises · %2$s</string>
+    <string name="exercises_cd_more_actions">More actions for %1$s</string>
+    <string name="exercises_rename">Rename</string>
+    <string name="exercises_change_category">Change category</string>
+    <string name="exercises_delete">Delete</string>
+    <string name="exercises_delete_title">Delete exercise?</string>
+    <string name="exercises_delete_body">%1$s will be removed from your exercise list. Logged sets keep their history.</string>
+    <string name="exercises_name_label">Name</string>
+    <string name="exercises_category_label">Category</string>
+    <string name="exercises_cancel">Cancel</string>
+    <string name="exercises_save">Save</string>
+    <string name="exercises_name_invalid">Please choose an appropriate name</string>
+
     <string name="home_rest_day">Rest day</string>
     <string name="home_rest_day_hint">Nothing logged for %1$s. Recovery is where the growth happens.</string>
     <string name="home_rest_day_chip">Rest day — nothing logged</string>
