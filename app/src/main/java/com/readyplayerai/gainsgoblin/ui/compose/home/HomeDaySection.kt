@@ -78,19 +78,21 @@ fun HomeDaySection(
     modifier: Modifier = Modifier,
 ) {
     val exercises = realDay?.Exercises
-    if (!exercises.isNullOrEmpty()) {
-        val pr = remember(exercises) { findPr(exercises) }
-        exercises.forEach { exercise ->
-            ExerciseCard(
-                exercise = exercise,
-                day = day,
-                categoryFor = categoryFor,
-                onExerciseClick = onExerciseClick,
-                pr = pr,
-            )
+    Column(modifier = modifier) {
+        if (!exercises.isNullOrEmpty()) {
+            val pr = remember(exercises) { findPr(exercises) }
+            exercises.forEach { exercise ->
+                ExerciseCard(
+                    exercise = exercise,
+                    day = day,
+                    categoryFor = categoryFor,
+                    onExerciseClick = onExerciseClick,
+                    pr = pr,
+                )
+            }
+        } else {
+            RestDayEmptyState(day = day)
         }
-    } else {
-        RestDayEmptyState(day = day)
     }
 }
 
