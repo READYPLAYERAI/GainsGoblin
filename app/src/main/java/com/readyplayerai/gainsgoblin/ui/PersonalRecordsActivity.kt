@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -88,10 +87,6 @@ class PersonalRecordsActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(@NonNull item: MenuItem): Boolean {
-        if (item.itemId == R.id.settings) {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-        }
         return super.onOptionsItemSelected(item)
     }
 }
