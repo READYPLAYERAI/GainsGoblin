@@ -220,7 +220,7 @@ fun HomeScreen(
                         )
                     }
                 } else {
-                    Spacer(Modifier.height(topInset))
+                    Spacer(Modifier.height(topInset + 8.dp))
                     HomeDaySection(
                         day = day,
                         realDay = realDay,
