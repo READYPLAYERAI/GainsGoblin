@@ -23,7 +23,6 @@ fun HomeAppBar(
     weekdayTitle: String,
     fullDate: String,
     collapseFraction: Float,
-    onTodayClick: () -> Unit,
     onDateIconClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -40,16 +39,6 @@ fun HomeAppBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_home_pick_date),
                     contentDescription = stringResource(R.string.home_pick_date),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            IconButton(
-                onClick = onTodayClick,
-                modifier = Modifier.size(44.dp).clip(CircleShape),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_home_today),
-                    contentDescription = stringResource(R.string.top_bar_today),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }

@@ -40,7 +40,6 @@
     <string name="charts_desc_volume">Total volume performed in each of your last 5 workouts</string>
     <string name="charts_empty_title">No workouts logged yet</string>
 
-    <string name="top_bar_today">Today</string>
     <string name="top_bar_search">Search</string>
     <string name="top_bar_close">Close</string>
     <string name="top_bar_add_exercise">New exercise</string>

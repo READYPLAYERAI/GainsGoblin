@@ -111,7 +111,7 @@ fun HomeScreen(
         derivedStateOf { uiState.infiniteDays[topDayIndex] }
     }
 
-    // Explicit arrivals (Today button, strip pill taps, picker confirm, HOME reselect)
+    // Explicit arrivals (strip pill taps, picker confirm, HOME reselect)
     // land expanded and exactly on the day — design rule 4 from the old pager. While the
     // flight runs the scroll behavior is frozen (limit 0 = nothing for nested scroll to
     // consume), so exitUntilCollapsed can't spend part of the flight collapsing the bar
@@ -159,7 +159,6 @@ fun HomeScreen(
                     },
                     fullDate = fullDateOf(topDay.Date),
                     collapseFraction = behavior.state.collapsedFraction,
-                    onTodayClick = { scrollToDay(0) },
                     onDateIconClick = { showDatePicker = true },
                 )
                 DayCarouselStrip(
