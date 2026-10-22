@@ -31,6 +31,14 @@
     <string name="nav_home">Home</string>
     <string name="nav_charts">Charts</string>
     <string name="nav_settings">Settings</string>
+    <string name="charts_subtitle">%1$d workouts logged</string>
+    <string name="charts_title_workouts">Workouts</string>
+    <string name="charts_desc_workouts">Number of workouts performed per year</string>
+    <string name="charts_title_bodyparts">Bodypart Breakdown</string>
+    <string name="charts_desc_bodyparts">See which bodyparts you focus on the most</string>
+    <string name="charts_title_volume">Daily Volume</string>
+    <string name="charts_desc_volume">Total volume performed in each of your last 5 workouts</string>
+    <string name="charts_empty_title">No workouts logged yet</string>
 
     <string name="top_bar_today">Today</string>
     <string name="top_bar_search">Search</string>

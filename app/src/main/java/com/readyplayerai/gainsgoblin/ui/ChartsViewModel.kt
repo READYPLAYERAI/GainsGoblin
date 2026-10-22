@@ -21,9 +21,8 @@ data class ChartsUiState(
 /**
  * Backs [ChartsActivity].
  *
- * Maps [WorkoutRepository.appState]'s workout days. The Activity renders on create
- * and restart only (legacy parity), so it does not collect this flow for
- * re-rendering mid-session.
+ * Maps [WorkoutRepository.appState]'s workout days. The Compose screen collects
+ * [uiState] directly.
  */
 @HiltViewModel
 class ChartsViewModel @Inject constructor(
@@ -39,9 +38,6 @@ class ChartsViewModel @Inject constructor(
             repository.appState.collect { _uiState.value = mapAppState(it) }
         }
     }
-
-    /** Fresh, never-stale state straight from the repository. */
-    suspend fun freshUiState(): ChartsUiState = mapAppState(repository.currentAppState())
 
     private fun mapAppState(state: AppState): ChartsUiState = ChartsUiState(
         loaded = state.loaded,
