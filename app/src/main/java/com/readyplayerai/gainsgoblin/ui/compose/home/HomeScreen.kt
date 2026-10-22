@@ -2,7 +2,6 @@ package com.readyplayerai.gainsgoblin.ui.compose.home
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -18,11 +17,16 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -40,7 +44,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.ui.HomeUiState
 import kotlinx.coroutines.CoroutineScope
@@ -48,8 +54,8 @@ import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.abs
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -91,12 +97,9 @@ fun HomeScreen(
     // Per-day collapse memory. Missing key == 0f == fully expanded.
     val collapse = remember { mutableStateMapOf<Int, Float>() }
     val travelPx = with(LocalDensity.current) { 220.dp.toPx() }
-    val openCalendarThresholdPx = with(LocalDensity.current) { 40.dp.toPx() }
-    val closeCalendarThresholdPx = with(LocalDensity.current) { 30.dp.toPx() }
 
-    // In-flow month calendar state. Opening/closing never writes to `collapse`,
-    // so per-day collapse memory is preserved.
-    val calendarOpen = remember { mutableStateOf(false) }
+    // Modal M3 date picker dialog visibility.
+    var showDatePicker by remember { mutableStateOf(false) }
 
     // Hoisted per-page list states so the parent-level raw gesture handler can
     // scroll the visible page's list programmatically.
@@ -127,15 +130,7 @@ fun HomeScreen(
     val derivedDay: WorkoutDay = uiState.infiniteDays[derivedIndex]
     val derivedRealDay: WorkoutDay? = uiState.realDays.firstOrNull { it.Date == derivedDay.Date }
     val derivedFraction = (collapse[derivedIndex] ?: 0f).coerceIn(0f, 1f)
-    val openFraction by animateFloatAsState(
-        targetValue = if (calendarOpen.value) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "homeCalendarOpenFraction",
-    )
-    val barFraction = max(openFraction, derivedFraction)
+    val barFraction = derivedFraction
 
     Column(
         modifier = Modifier
@@ -150,32 +145,17 @@ fun HomeScreen(
                 uiState.todayPosition.takeIf { it >= 0 }?.let(::jumpTo)
             },
             onDateIconClick = {
-                calendarOpen.value = !calendarOpen.value
+                showDatePicker = true
             },
         )
 
-        if (calendarOpen.value) {
-            MonthCalendar(
-                days = uiState.infiniteDays,
-                todayIndex = uiState.todayPosition,
-                selectedDayIndex = pagerState.currentPage,
-                onPickDay = { index ->
-                    calendarOpen.value = false
-                    jumpTo(index)
-                },
-                onCloseGesture = {
-                    calendarOpen.value = false
-                },
-            )
-        } else {
-            DayCarouselStrip(
-                days = uiState.infiniteDays,
-                todayIndex = uiState.todayPosition,
-                pagerState = pagerState,
-                collapseFraction = derivedFraction,
-                onPillTap = ::jumpTo,
-            )
-        }
+        DayCarouselStrip(
+            days = uiState.infiniteDays,
+            todayIndex = uiState.todayPosition,
+            pagerState = pagerState,
+            collapseFraction = derivedFraction,
+            onPillTap = ::jumpTo,
+        )
 
         SummaryChips(
             day = derivedDay,
@@ -209,13 +189,10 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .homeVerticalGestures(
                     travelPx = travelPx,
-                    openThresholdPx = openCalendarThresholdPx,
-                    closeThresholdPx = closeCalendarThresholdPx,
                     touchSlopPx = touchSlopPx,
                     collapse = collapse,
                     pagerState = pagerState,
                     pageListStates = pageListStates,
-                    calendarOpen = calendarOpen,
                     scope = scope,
                 ),
         ) { page ->
@@ -231,46 +208,51 @@ fun HomeScreen(
             )
         }
     }
+
+    val dateToIndex = remember(uiState.infiniteDays) {
+        val map = HashMap<String, Int>(uiState.infiniteDays.size)
+        uiState.infiniteDays.forEachIndexed { index, day -> day.Date?.let { map[it] = index } }
+        map
+    }
+
+    if (showDatePicker) {
+        HomeDatePickerDialog(
+            initialDateString = uiState.infiniteDays.getOrNull(pagerState.currentPage)?.Date,
+            windowFirstDay = uiState.infiniteDays.first().Date,
+            windowLastDay = uiState.infiniteDays.last().Date,
+            onConfirm = { date ->
+                showDatePicker = false
+                dateToIndex[date]?.let(::jumpTo)
+            },
+            onDismiss = { showDatePicker = false },
+        )
+    }
 }
 
 /**
  * Raw vertical gesture handling at the pager level. The pager keeps ownership
  * of horizontal paging; once a gesture locks vertical we consume moves and
- * drive the collapse fraction / calendar / page list ourselves. This avoids
- * relying on nested-scroll sign conventions entirely.
+ * drive the collapse fraction / page list ourselves. This avoids relying on
+ * nested-scroll sign conventions entirely.
  */
 private fun Modifier.homeVerticalGestures(
     travelPx: Float,
-    openThresholdPx: Float,
-    closeThresholdPx: Float,
     touchSlopPx: Float,
     collapse: MutableMap<Int, Float>,
     pagerState: PagerState,
     pageListStates: Map<Int, LazyListState>,
-    calendarOpen: MutableState<Boolean>,
     scope: CoroutineScope,
-): Modifier = pointerInput(travelPx, openThresholdPx, closeThresholdPx, touchSlopPx) {
+): Modifier = pointerInput(travelPx, touchSlopPx) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
         var lastPosition = down.position
         var totalX = 0f
         var totalY = 0f
         var mode = 0 // 0 = undecided, 1 = vertical (ours), 2 = horizontal (pager's)
-        var pullAccum = 0f
-        var closeAccum = 0f
         var released = false
         val samples = ArrayDeque<Pair<Long, Float>>()
 
         fun applyDrag(dy: Float, time: Long) {
-            if (calendarOpen.value) {
-                if (dy < 0f) {
-                    closeAccum += -dy
-                    if (closeAccum >= closeThresholdPx) {
-                        calendarOpen.value = false
-                    }
-                }
-                return
-            }
             val page = pagerState.currentPage
             val list = pageListStates[page]
             val fraction = (collapse[page] ?: 0f).coerceIn(0f, 1f)
@@ -293,12 +275,6 @@ private fun Modifier.homeVerticalGestures(
                         scope.launch { list.scrollBy(-dy) }
                     } else if (fraction > 0f) {
                         collapse[page] = (fraction - dy / travelPx).coerceIn(0f, 1f)
-                    } else {
-                        pullAccum += dy
-                        if (pullAccum >= openThresholdPx) {
-                            calendarOpen.value = true
-                            pullAccum = 0f
-                        }
                     }
                 }
             }
@@ -335,7 +311,7 @@ private fun Modifier.homeVerticalGestures(
             }
         }
 
-        if (mode == 1 && released && !calendarOpen.value) {
+        if (mode == 1 && released) {
             val page = pagerState.currentPage
             val fraction = (collapse[page] ?: 0f).coerceIn(0f, 1f)
             if (fraction > 0f && fraction < 1f) {
@@ -381,4 +357,88 @@ private fun fullDateOf(date: String?): String = try {
     if (parsed != null) SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(parsed) else ""
 } catch (e: ParseException) {
     ""
+}
+
+private val utcDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+    timeZone = TimeZone.getTimeZone("UTC")
+}
+
+/** Parses an app date string (yyyy-MM-dd) into UTC-midnight epoch millis, or null if unparseable. */
+private fun dateStringToUtcMillis(date: String): Long? = try {
+    utcDateFormatter.parse(date)?.time
+} catch (e: ParseException) {
+    null
+}
+
+/** Formats UTC-midnight epoch millis back into an app date string (yyyy-MM-dd). */
+private fun utcMillisToDateString(millis: Long): String = utcDateFormatter.format(millis)
+
+/**
+ * The M3 modal date picker dialog (spec: m3.material.io date pickers),
+ * restricted to the ten-year day window.
+ */
+@Composable
+private fun HomeDatePickerDialog(
+    initialDateString: String?,
+    windowFirstDay: String?,
+    windowLastDay: String?,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val windowFirstMillis = windowFirstDay?.let(::dateStringToUtcMillis)
+    val windowLastMillis = windowLastDay?.let(::dateStringToUtcMillis)
+    val windowFirstYear = windowFirstDay?.take(4)?.toIntOrNull()
+    val windowLastYear = windowLastDay?.take(4)?.toIntOrNull()
+
+    val selectableDates = remember(windowFirstDay, windowLastDay) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val first = windowFirstMillis ?: return true
+                val last = windowLastMillis ?: return true
+                return utcTimeMillis in first..last
+            }
+
+            override fun isSelectableYear(year: Int): Boolean {
+                val first = windowFirstYear ?: return true
+                val last = windowLastYear ?: return true
+                return year in first..last
+            }
+        }
+    }
+
+    val initialSelectedMillis = dateStringToUtcMillis(initialDateString ?: "")
+    val state = if (windowFirstYear != null && windowLastYear != null) {
+        rememberDatePickerState(
+            initialSelectedDateMillis = initialSelectedMillis,
+            yearRange = windowFirstYear..windowLastYear,
+            selectableDates = selectableDates,
+        )
+    } else {
+        rememberDatePickerState(
+            initialSelectedDateMillis = initialSelectedMillis,
+            selectableDates = selectableDates,
+        )
+    }
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    state.selectedDateMillis
+                        ?.let { onConfirm(utcMillisToDateString(it)) }
+                        ?: onDismiss()
+                },
+            ) {
+                Text(stringResource(R.string.home_date_picker_ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.exercises_cancel))
+            }
+        },
+    ) {
+        DatePicker(state = state)
+    }
 }

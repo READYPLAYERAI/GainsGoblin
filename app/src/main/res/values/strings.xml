@@ -63,6 +63,7 @@
     <string name="home_pr_rep">REP PR</string>
     <string name="home_pr_weight">WT PR</string>
     <string name="home_pick_date">Pick a date</string>
+    <string name="home_date_picker_ok">OK</string>
     <string name="home_prev_month">Previous month</string>
     <string name="home_next_month">Next month</string>
 
