@@ -65,7 +65,6 @@
 
     <string name="home_rest_day">Rest day</string>
     <string name="home_rest_day_hint">Nothing logged for %1$s. Recovery is where the growth happens.</string>
-    <string name="home_rest_day_chip">Rest day — nothing logged</string>
     <string name="home_set_label">Set %1$d</string>
     <string name="home_pr_rep">REP PR</string>
     <string name="home_pr_weight">WT PR</string>

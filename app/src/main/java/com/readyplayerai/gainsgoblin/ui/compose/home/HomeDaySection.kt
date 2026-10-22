@@ -66,7 +66,7 @@ private data class DayPrCelebration(
 
 /**
  * One section of Home's vertical journal feed: renders exactly what the
- * old pager page rendered — summary chips + exercise cards for a training day, or the big
+ * old pager page rendered — exercise cards for a training day, or the big
  * rest-day empty state for an empty day. The day header lives in the flexible app bar.
  */
 @Composable
@@ -79,7 +79,6 @@ fun HomeDaySection(
 ) {
     val exercises = realDay?.Exercises
     if (!exercises.isNullOrEmpty()) {
-        SummaryChips(day = day, realDay = realDay)
         val pr = remember(exercises) { findPr(exercises) }
         exercises.forEach { exercise ->
             ExerciseCard(
