@@ -21,29 +21,41 @@ class CsvTest {
         assertEquals("2026-01-05", first.date)
         assertEquals("Bench", first.exerciseName)
         assertEquals("Chest", first.category)
-        assertEquals(8.0, first.reps!!, 0.001)
-        assertEquals(60.0, first.weight!!, 0.001)
+        assertEquals(8.0, first.weight!!, 0.001)
+        assertEquals(60.0, first.reps!!, 0.001)
         assertEquals("", first.comment)
 
         val second = sets[1]
         assertEquals("2026-01-06", second.date)
         assertEquals("Squat", second.exerciseName)
         assertEquals("Legs", second.category)
-        assertEquals(5.0, second.reps!!, 0.001)
-        assertEquals(100.0, second.weight!!, 0.001)
+        assertEquals(5.0, second.weight!!, 0.001)
+        assertEquals(100.0, second.reps!!, 0.001)
         assertEquals("good set", second.comment)
     }
 
     @Test
-    fun setsFromCsvRows_preservesLegacyRepsWeightColumnSwapQuirk() {
-        // Legacy export writes Weight before Reps, but import reads column 3 as reps.
-        val row = arrayOf("2026-01-05", "Bench", "Chest", "100", "5")
+    fun setsFromCsvRows_mapsExportWeightRepsColumnsCorrectly() {
+        // Export layout is Date,Exercise,Category,Weight (kg),Reps,Comment,
+        // so column 3 is weight and column 4 is reps.
+        val exportHeader =
+            arrayOf("Date", "Exercise", "Category", "Weight (kg)", "Reps", "Comment")
+        val row = arrayOf(
+            "2026-08-31",
+            "Cable Machine Single-arm Tricep Pulldown",
+            "Triceps",
+            "9.1",
+            "10.0",
+            "",
+        )
 
-        val sets = setsFromCsvRows(listOf(header, row))
+        val sets = setsFromCsvRows(listOf(exportHeader, row))
 
         assertEquals(1, sets.size)
-        assertEquals(100.0, sets[0].reps!!, 0.001)
-        assertEquals(5.0, sets[0].weight!!, 0.001)
+        assertEquals(9.1, sets[0].weight!!, 0.001)
+        assertEquals(10.0, sets[0].reps!!, 0.001)
+        assertEquals("Cable Machine Single-arm Tricep Pulldown", sets[0].exerciseName)
+        assertEquals("Triceps", sets[0].category)
     }
 
     @Test
