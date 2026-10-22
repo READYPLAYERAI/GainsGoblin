@@ -26,6 +26,7 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 
@@ -41,6 +42,9 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    // Incremented on bottom-nav HOME reselect; Home's feed collects it and scrolls to today.
+    private val homeScrollToTopTick = MutableStateFlow(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -54,14 +58,18 @@ class MainActivity : AppCompatActivity() {
     fun onCreateStuff() {
         initActivity()
 
-        setupBottomNavBar(BottomNavTab.HOME) { dateSelected }
+        setupBottomNavBar(
+            currentTab = BottomNavTab.HOME,
+            diaryDateProvider = { dateSelected },
+            onHomeTabReselect = { homeScrollToTopTick.value++ },
+        )
 
         // Date selected is by default today
         val dateFormat: DateFormat = SimpleDateFormat("yyyy-MM-dd")
         dateSelected = dateFormat.format(Date())
     }
 
-    // The Compose home island: pager, strip, chips, calendar, appbar.
+    // The Compose home island: vertical journal feed + flexible app bar.
     private fun setupHome() {
         val activity = this
         findViewById<ComposeView>(R.id.home_view).setContent {
@@ -81,6 +89,7 @@ class MainActivity : AppCompatActivity() {
                         dateSelected = date
                         viewModel.selectDate(date)
                     },
+                    scrollToTopTick = homeScrollToTopTick,
                 )
             }
         }

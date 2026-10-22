@@ -1,36 +1,29 @@
 package com.readyplayerai.gainsgoblin.ui.compose.home
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,41 +31,40 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.layout
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.ui.HomeUiState
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.math.abs
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 /**
- * The Home screen scaffold: a loading gate, a ten-year day [HorizontalPager],
- * and a derived-day header + carousel strip + summary chips above the pages.
+ * The Home screen: a loading gate and a single continuous vertical journal feed,
+ * newest-first, with today pinned at index 0 and the past flowing down. A flexible
+ * app bar collapses via Material 3 nested scroll as the feed scrolls, and its
+ * title/subtitle track the day currently at the top of the feed. A day carousel
+ * strip sits under the flexible app bar, synced to the feed's top day (same
+ * design as the old pager, now driving a vertical feed).
  *
  * The theme is expected to be provided by the caller (integration functions
  * wrap [com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTheme]).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
     categoryFor: (String?) -> String?,
     onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
     onSelectDate: (date: String) -> Unit,
+    scrollToTopTick: StateFlow<Int>? = null,
 ) {
     if (!uiState.loaded || uiState.infiniteDays.isEmpty()) {
         Surface(
@@ -89,128 +81,122 @@ fun HomeScreen(
         return
     }
 
-    val pagerState = rememberPagerState(
-        initialPage = maxOf(0, uiState.todayPosition),
-    ) { uiState.infiniteDays.size }
-
+    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val density = LocalDensity.current
+    // Collapse travel = app bar (152dp -> 64dp) + day carousel strip (66dp -> 0).
+    val headerTravelPx =
+        with(density) { -((152.dp - 64.dp) + DayCarouselStripHeight).toPx() }
 
-    // Per-day collapse memory. Missing key == 0f == fully expanded.
-    val collapse = remember { mutableStateMapOf<Int, Float>() }
-    val travelPx = with(LocalDensity.current) { 220.dp.toPx() }
+    // True while a programmatic arrival flight runs (see scrollToDay); the SideEffect
+    // below must not re-apply the travel limit mid-flight.
+    var arrivalInFlight by remember { mutableStateOf(false) }
 
-    // Modal M3 date picker dialog visibility.
+    SideEffect {
+        if (!arrivalInFlight && behavior.state.heightOffsetLimit != headerTravelPx) {
+            behavior.state.heightOffsetLimit = headerTravelPx
+        }
+    }
+
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Hoisted per-page list states so the parent-level raw gesture handler can
-    // scroll the visible page's list programmatically.
-    val pageListStates = remember { mutableStateMapOf<Int, LazyListState>() }
-
-    // The 50% rule: while a swipe passes the midpoint, the UI shows the neighbour page.
-    val derivedIndex by remember {
+    // The day currently at the top of the feed (index 0 = today).
+    val topDayIndex by remember(uiState.infiniteDays) {
         derivedStateOf {
-            val f = pagerState.currentPageOffsetFraction
-            val dir = if (f > 0.5f) 1 else if (f < -0.5f) -1 else 0
-            (pagerState.currentPage + dir).coerceIn(0, uiState.infiniteDays.lastIndex)
+            listState.firstVisibleItemIndex.coerceIn(0, uiState.infiniteDays.lastIndex)
+        }
+    }
+    val topDay: WorkoutDay by remember(uiState.infiniteDays) {
+        derivedStateOf { uiState.infiniteDays[topDayIndex] }
+    }
+
+    // Explicit arrivals (Today button, strip pill taps, picker confirm, HOME reselect)
+    // land expanded and exactly on the day — design rule 4 from the old pager. While the
+    // flight runs the scroll behavior is frozen (limit 0 = nothing for nested scroll to
+    // consume), so exitUntilCollapsed can't spend part of the flight collapsing the bar
+    // and short-landing the arrival.
+    fun scrollToDay(index: Int) {
+        scope.launch {
+            arrivalInFlight = true
+            try {
+                behavior.state.heightOffsetLimit = 0f
+                behavior.state.heightOffset = 0f
+                listState.animateScrollToItem(index)
+            } finally {
+                arrivalInFlight = false
+                behavior.state.heightOffsetLimit = headerTravelPx
+            }
         }
     }
 
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { page ->
-            uiState.infiniteDays.getOrNull(page)?.Date?.let(onSelectDate)
-        }
+    // Notify the host (MainActivity persists selectedDate) whenever the top day changes.
+    LaunchedEffect(listState, uiState.infiniteDays) {
+        snapshotFlow { topDay.Date }
+            .distinctUntilChanged()
+            .collect { date -> date?.let(onSelectDate) }
     }
 
-    fun jumpTo(index: Int) {
-        val target = index.coerceIn(0, uiState.infiniteDays.lastIndex)
-        // Rule 4: explicit arrivals land expanded.
-        collapse[target] = 0f
-        scope.launch { pagerState.animateScrollToPage(target) }
+    // Bottom-nav HOME reselect hook (Step 3 wires the producer; null = disabled).
+    LaunchedEffect(scrollToTopTick) {
+        scrollToTopTick?.collect { tick -> if (tick > 0) scrollToDay(0) }
     }
 
-    val derivedDay: WorkoutDay = uiState.infiniteDays[derivedIndex]
-    val derivedRealDay: WorkoutDay? = uiState.realDays.firstOrNull { it.Date == derivedDay.Date }
-    val derivedFraction = (collapse[derivedIndex] ?: 0f).coerceIn(0f, 1f)
-    val barFraction = derivedFraction
-
-    Column(
+    Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .statusBarsPadding(),
-    ) {
-        HomeAppBar(
-            weekdayTitle = weekdayOf(derivedDay.Date),
-            fullDate = fullDateOf(derivedDay.Date),
-            collapseFraction = barFraction,
-            onTodayClick = {
-                uiState.todayPosition.takeIf { it >= 0 }?.let(::jumpTo)
-            },
-            onDateIconClick = {
-                showDatePicker = true
-            },
-        )
-
-        DayCarouselStrip(
-            days = uiState.infiniteDays,
-            todayIndex = uiState.todayPosition,
-            pagerState = pagerState,
-            collapseFraction = derivedFraction,
-            onPillTap = ::jumpTo,
-        )
-
-        SummaryChips(
-            day = derivedDay,
-            realDay = derivedRealDay,
-            modifier = Modifier
-                .clipToBounds()
-                .layout { measurable, constraints ->
-                    val placeable = measurable.measure(constraints)
-                    if (barFraction >= 0.99f) {
-                        layout(placeable.width, 0) {}
+            .nestedScroll(behavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            Column {
+                HomeAppBar(
+                    // While collapsed the date subtitle is gone, so the title carries the date
+                    // ("Tuesday, Oct 20, 2026"); expanded keeps the big weekday-only title.
+                    weekdayTitle = if (behavior.state.collapsedFraction >= 0.5f) {
+                        weekdayPlusShortDateOf(topDay.Date)
                     } else {
-                        val height = (placeable.height * (1f - barFraction))
-                            .roundToInt()
-                            .coerceAtLeast(0)
-                        layout(placeable.width, height) {
-                            placeable.placeRelative(
-                                x = 0,
-                                y = (height - placeable.height).coerceAtMost(0),
-                            )
-                        }
-                    }
-                }
-                .graphicsLayer { alpha = 1f - barFraction },
-        )
-
-        val touchSlopPx = LocalViewConfiguration.current.touchSlop
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .homeVerticalGestures(
-                    travelPx = travelPx,
-                    touchSlopPx = touchSlopPx,
-                    collapse = collapse,
-                    pagerState = pagerState,
-                    pageListStates = pageListStates,
-                    scope = scope,
-                ),
-        ) { page ->
-            val listState = rememberLazyListState()
-            LaunchedEffect(page) { pageListStates[page] = listState }
-            val day = uiState.infiniteDays[page]
-            HomeDayPage(
-                day = day,
-                realDay = uiState.realDays.firstOrNull { it.Date == day.Date },
-                categoryFor = categoryFor,
-                onExerciseClick = onExerciseClick,
-                listState = listState,
-            )
+                        weekdayOf(topDay.Date)
+                    },
+                    fullDate = fullDateOf(topDay.Date),
+                    collapseFraction = behavior.state.collapsedFraction,
+                    onTodayClick = { scrollToDay(0) },
+                    onDateIconClick = { showDatePicker = true },
+                )
+                DayCarouselStrip(
+                    days = uiState.infiniteDays,
+                    // Descending window: today is index 0.
+                    todayIndex = 0,
+                    activeIndex = topDayIndex,
+                    collapseFraction = behavior.state.collapsedFraction,
+                    feedListState = listState,
+                    onPillTap = { index -> scrollToDay(index) },
+                )
+            }
+        },
+    ) { innerPadding ->
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding() + 24.dp,
+            ),
+        ) {
+            items(
+                uiState.infiniteDays,
+                key = { day -> day.Date ?: System.identityHashCode(day).toString() },
+            ) { day ->
+                HomeDaySection(
+                    day = day,
+                    realDay = uiState.realDays.firstOrNull { it.Date == day.Date },
+                    categoryFor = categoryFor,
+                    onExerciseClick = onExerciseClick,
+                )
+            }
         }
     }
 
+    // Date -> index into the (descending) feed for the picker.
     val dateToIndex = remember(uiState.infiniteDays) {
         val map = HashMap<String, Int>(uiState.infiniteDays.size)
         uiState.infiniteDays.forEachIndexed { index, day -> day.Date?.let { map[it] = index } }
@@ -219,131 +205,17 @@ fun HomeScreen(
 
     if (showDatePicker) {
         HomeDatePickerDialog(
-            initialDateString = uiState.infiniteDays.getOrNull(pagerState.currentPage)?.Date,
-            windowFirstDay = uiState.infiniteDays.first().Date,
-            windowLastDay = uiState.infiniteDays.last().Date,
+            initialDateString = topDay.Date,
+            // windowFirstDay/windowLastDay must be CHRONOLOGICAL (first <= last):
+            // the feed is DESCENDING, so the oldest day is last(), today is first().
+            windowFirstDay = uiState.infiniteDays.last().Date,
+            windowLastDay = uiState.infiniteDays.first().Date,
             onConfirm = { date ->
                 showDatePicker = false
-                dateToIndex[date]?.let(::jumpTo)
+                dateToIndex[date]?.let(::scrollToDay)
             },
             onDismiss = { showDatePicker = false },
         )
-    }
-}
-
-/**
- * Raw vertical gesture handling at the pager level. The pager keeps ownership
- * of horizontal paging; once a gesture locks vertical we consume moves and
- * drive the collapse fraction / page list ourselves. This avoids relying on
- * nested-scroll sign conventions entirely.
- */
-private fun Modifier.homeVerticalGestures(
-    travelPx: Float,
-    touchSlopPx: Float,
-    collapse: MutableMap<Int, Float>,
-    pagerState: PagerState,
-    pageListStates: Map<Int, LazyListState>,
-    scope: CoroutineScope,
-): Modifier = pointerInput(travelPx, touchSlopPx) {
-    awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = false)
-        var lastPosition = down.position
-        var totalX = 0f
-        var totalY = 0f
-        var mode = 0 // 0 = undecided, 1 = vertical (ours), 2 = horizontal (pager's)
-        var released = false
-        val samples = ArrayDeque<Pair<Long, Float>>()
-
-        fun applyDrag(dy: Float, time: Long) {
-            val page = pagerState.currentPage
-            val list = pageListStates[page]
-            val fraction = (collapse[page] ?: 0f).coerceIn(0f, 1f)
-            when {
-                dy < 0f -> {
-                    val upward = -dy
-                    val needed = ((1f - fraction) * travelPx).coerceAtLeast(0f)
-                    val toCollapse = min(upward, needed)
-                    if (toCollapse > 0f) {
-                        collapse[page] = (fraction + toCollapse / travelPx).coerceIn(0f, 1f)
-                    }
-                    val leftover = upward - toCollapse
-                    if (leftover > 0f && list != null) {
-                        scope.launch { list.scrollBy(leftover) }
-                    }
-                }
-
-                dy > 0f -> {
-                    if (list != null && list.canScrollBackward) {
-                        scope.launch { list.scrollBy(-dy) }
-                    } else if (fraction > 0f) {
-                        collapse[page] = (fraction - dy / travelPx).coerceIn(0f, 1f)
-                    }
-                }
-            }
-        }
-
-        while (true) {
-            val event = awaitPointerEvent(PointerEventPass.Initial)
-            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-            val delta = change.position - lastPosition
-            lastPosition = change.position
-            totalX += delta.x
-            totalY += delta.y
-
-            if (mode == 0) {
-                if (abs(totalY) > abs(totalX) && abs(totalY) > touchSlopPx) {
-                    mode = 1
-                } else if (abs(totalX) > abs(totalY) && abs(totalX) > touchSlopPx) {
-                    mode = 2
-                }
-            }
-
-            if (mode == 1) {
-                change.consume()
-                if (delta.y != 0f) {
-                    applyDrag(delta.y, change.uptimeMillis)
-                    samples.addLast(change.uptimeMillis to delta.y)
-                    while (samples.size > 5) samples.removeFirst()
-                }
-            }
-
-            if (!change.pressed) {
-                released = true
-                break
-            }
-        }
-
-        if (mode == 1 && released) {
-            val page = pagerState.currentPage
-            val fraction = (collapse[page] ?: 0f).coerceIn(0f, 1f)
-            if (fraction > 0f && fraction < 1f) {
-                val velocity = if (samples.size >= 2) {
-                    val dt = samples.last().first - samples.first().first
-                    if (dt > 0L) samples.sumOf { it.second.toDouble() }.toFloat() /
-                        (dt / 1000f) else 0f
-                } else {
-                    0f
-                }
-                val target = when {
-                    velocity < -600f -> 1f
-                    velocity > 600f -> 0f
-                    fraction >= 0.5f -> 1f
-                    else -> 0f
-                }
-                scope.launch {
-                    animate(
-                        initialValue = fraction,
-                        targetValue = target,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow,
-                        ),
-                    ) { value, _ ->
-                        collapse[page] = value.coerceIn(0f, 1f)
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -357,6 +229,18 @@ private fun weekdayOf(date: String?): String = try {
 private fun fullDateOf(date: String?): String = try {
     val parsed = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date ?: "")
     if (parsed != null) SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(parsed) else ""
+} catch (e: ParseException) {
+    ""
+}
+
+/** Formats a date as "Tuesday, Oct 20, 2026" (short month) for the collapsed bar title. */
+private fun weekdayPlusShortDateOf(date: String?): String = try {
+    val parsed = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date ?: "")
+    if (parsed != null) {
+        SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault()).format(parsed)
+    } else {
+        ""
+    }
 } catch (e: ParseException) {
     ""
 }
@@ -377,7 +261,7 @@ private fun utcMillisToDateString(millis: Long): String = utcDateFormatter.forma
 
 /**
  * The M3 modal date picker dialog (spec: m3.material.io date pickers),
- * restricted to the ten-year day window.
+ * restricted to the five-year past day window.
  */
 @Composable
 private fun HomeDatePickerDialog(

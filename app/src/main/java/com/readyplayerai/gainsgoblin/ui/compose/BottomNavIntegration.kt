@@ -15,13 +15,15 @@ import com.readyplayerai.gainsgoblin.ui.SettingsActivity
  * layout. The layout must contain a ComposeView with id
  * [R.id.bottom_navigation_view].
  *
- * Tapping the already-selected tab is a no-op. [diaryDateProvider] is only
- * read at click time and its result is passed to DiaryActivity as the "date"
- * intent extra (used when navigating from Home).
+ * Tapping the already-selected tab is a no-op, except for HOME where
+ * [onHomeTabReselect] is invoked so the host can scroll the feed back to today.
+ * [diaryDateProvider] is only read at click time and its result is passed to
+ * DiaryActivity as the "date" intent extra (used when navigating from Home).
  */
 fun AppCompatActivity.setupBottomNavBar(
     currentTab: BottomNavTab,
     diaryDateProvider: () -> String? = { null },
+    onHomeTabReselect: () -> Unit = {},
 ) {
     val activity = this
     findViewById<ComposeView>(R.id.bottom_navigation_view).setContent {
@@ -29,6 +31,8 @@ fun AppCompatActivity.setupBottomNavBar(
             GainsGoblinBottomBar(selectedTab = currentTab) { tab ->
                 if (tab != currentTab) {
                     activity.navigateToTab(tab, diaryDateProvider())
+                } else if (tab == BottomNavTab.HOME) {
+                    onHomeTabReselect()
                 }
             }
         }

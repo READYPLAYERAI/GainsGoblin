@@ -15,21 +15,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -52,11 +52,11 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.floor
 import kotlin.math.roundToInt
 
 private val TNUM = TextStyle(fontFeatureSettings = "tnum")
@@ -69,6 +69,9 @@ private val stripContentPadding: Dp = 16.dp
 private val stripHeight: Dp = 58.dp
 private val stripWrapHeight: Dp = 66.dp
 private val stripTopPadding: Dp = 8.dp
+
+/** The strip's wrap height ([stripWrapHeight]) — its collapse travel in the Home top bar. */
+internal val DayCarouselStripHeight: Dp = stripWrapHeight
 
 private data class DayCell(
     val weekdayShort: String,
@@ -107,16 +110,18 @@ private fun buildDayCells(days: List<WorkoutDay>): List<DayCell> {
 /**
  * The day carousel strip above the summary chips.
  *
- * The strip is a non-user-scrollable [LazyRow] whose scroll position is driven
- * 1:1 from the Home pager. It also supports drag-to-scrub (which drives the
- * pager instantly) and tap-to-jump (handled by [onPillTap]).
+ * The strip is a non-user-scrollable [LazyRow] whose scroll position follows the
+ * day currently at the top of the vertical Home feed. It also supports
+ * drag-to-scrub (which drives the feed instantly) and tap-to-jump (handled by
+ * [onPillTap]).
  */
 @Composable
 fun DayCarouselStrip(
     days: List<WorkoutDay>,
     todayIndex: Int,
-    pagerState: PagerState,
+    activeIndex: Int,
     collapseFraction: Float,
+    feedListState: LazyListState,
     onPillTap: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -127,6 +132,9 @@ fun DayCarouselStrip(
     val density = LocalDensity.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    // Track the latest activeIndex for long-lived closures (effect + gesture lambdas).
+    val activeIndexState = rememberUpdatedState(activeIndex)
 
     // Center x (in strip content coordinates, including the 16dp start padding)
     // of every pill. We walk tag/pill widths exactly like the LazyRow does.
@@ -156,37 +164,25 @@ fun DayCarouselStrip(
     var windowWidthPx by remember { mutableIntStateOf(0) }
     var scrubPosition by remember { mutableFloatStateOf(0f) }
 
-    val activeIndex by remember(pagerState, days.size) {
-        derivedStateOf {
-            (pagerState.currentPage + pagerState.currentPageOffsetFraction)
-                .roundToInt()
-                .coerceIn(0, days.lastIndex)
-        }
-    }
-
-    // Strip follows the pager 1:1, interpolating between pill centers.
-    LaunchedEffect(pagerState, pillCenters, windowWidthPx) {
+    // Strip follows the feed's top day: the active pill stays centered.
+    LaunchedEffect(pillCenters, windowWidthPx) {
         if (windowWidthPx <= 0 || pillCenters.isEmpty()) return@LaunchedEffect
         val windowCenterPx = windowWidthPx / 2f
         val pillWidthPx = with(density) { pillWidth.toPx() }
         val contentPaddingPx = with(density) { stripContentPadding.toPx() }
-        snapshotFlow { pagerState.currentPage + pagerState.currentPageOffsetFraction }
-            .collect { rawPosition ->
-                val position = rawPosition.coerceIn(0f, days.lastIndex.toFloat())
-                val i0 = floor(position).toInt().coerceIn(0, days.lastIndex)
-                val i1 = (i0 + 1).coerceAtMost(days.lastIndex)
-                val t = (position - i0).coerceIn(0f, 1f)
-                val interpolatedCenter =
-                    pillCenters[i0] + (pillCenters[i1] - pillCenters[i0]) * t
-                // Positive scrollOffset scrolls the strip forward. scrollToItem
-                // places the anchored pill's start edge scrollOffset px above the
-                // viewport start, so centering the interpolated pill center on
-                // the window needs off = C - pillStart - windowCenter. Anchor at
-                // the pill's LazyRow item index (month tags counted).
-                val anchorItemIndex = pillItemIndices[i0]
-                val pillStartContent = pillCenters[i0] - pillWidthPx / 2f
+        snapshotFlow { activeIndexState.value }
+            .distinctUntilChanged()
+            .collect { rawIndex ->
+                val i = rawIndex.coerceIn(0, days.lastIndex)
+                val activeCenter = pillCenters[i]
+                // scrollToItem places the anchored pill's start edge scrollOffset px
+                // above the viewport start; centering the active pill on the window
+                // needs off = C - pillStart - windowCenter. Anchor at the pill's
+                // LazyRow item index (month tags counted).
+                val anchorItemIndex = pillItemIndices[i]
+                val pillStartContent = pillCenters[i] - pillWidthPx / 2f
                 val scrollOffset =
-                    (interpolatedCenter - pillStartContent - windowCenterPx + contentPaddingPx)
+                    (activeCenter - pillStartContent - windowCenterPx + contentPaddingPx)
                         .roundToInt()
                 listState.scrollToItem(index = anchorItemIndex, scrollOffset = scrollOffset)
             }
@@ -198,6 +194,7 @@ fun DayCarouselStrip(
         modifier = modifier
             .fillMaxWidth()
             .graphicsLayer { alpha = 1f - f }
+            .background(MaterialTheme.colorScheme.surface)
             .height(lerp(stripWrapHeight, 0.dp, f))
             .padding(top = lerp(stripTopPadding, 0.dp, f))
             .clipToBounds(),
@@ -216,24 +213,23 @@ fun DayCarouselStrip(
                 .pointerInput(days.size, dayPitchPx) {
                     detectHorizontalDragGestures(
                         onDragStart = {
-                            scrubPosition = (pagerState.currentPage +
-                                pagerState.currentPageOffsetFraction)
+                            scrubPosition = activeIndexState.value.toFloat()
                                 .coerceIn(0f, days.lastIndex.toFloat())
                         },
                         onHorizontalDrag = { change, dragAmountPx ->
                             change.consume()
                             scrubPosition = (scrubPosition - dragAmountPx / dayPitchPx)
                                 .coerceIn(0f, days.lastIndex.toFloat())
-                            // PagerState requires pageOffsetFraction in [-0.5, 0.5],
-                            // so use the nearest page plus its signed fraction.
-                            val page = scrubPosition.roundToInt()
-                                .coerceIn(0, days.lastIndex)
-                            val offset = (scrubPosition - page).coerceIn(-0.5f, 0.5f)
-                            scope.launch { pagerState.scrollToPage(page, offset) }
+                            // Snap the feed to the scrubbed day's section top.
+                            scope.launch {
+                                feedListState.scrollToItem(
+                                    scrubPosition.roundToInt().coerceIn(0, days.lastIndex),
+                                )
+                            }
                         },
                         onDragEnd = {
                             scope.launch {
-                                pagerState.animateScrollToPage(
+                                feedListState.animateScrollToItem(
                                     scrubPosition.roundToInt()
                                         .coerceIn(0, days.lastIndex),
                                 )
@@ -241,7 +237,7 @@ fun DayCarouselStrip(
                         },
                         onDragCancel = {
                             scope.launch {
-                                pagerState.animateScrollToPage(
+                                feedListState.animateScrollToItem(
                                     scrubPosition.roundToInt()
                                         .coerceIn(0, days.lastIndex),
                                 )

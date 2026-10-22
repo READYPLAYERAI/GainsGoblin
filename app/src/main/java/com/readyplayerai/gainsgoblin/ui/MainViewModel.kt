@@ -8,7 +8,6 @@ import com.readyplayerai.gainsgoblin.data.ExportResult
 import com.readyplayerai.gainsgoblin.data.ImportCsvResult
 import com.readyplayerai.gainsgoblin.data.WorkoutRepository
 import com.readyplayerai.gainsgoblin.domain.buildInfiniteDays
-import com.readyplayerai.gainsgoblin.domain.todayDateString
 import com.readyplayerai.gainsgoblin.model.Exercise
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,25 +20,27 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * UI state for the Home pager screen.
+ * UI state for the Home journal feed.
  *
- * [infiniteDays] is the fixed ten-year window of empty days (the legacy
- * `infiniteWorkoutDays`); [realDays] are the repository's PR-flagged days.
+ * [infiniteDays] is the fixed descending day window of empty days (the legacy
+ * `infiniteWorkoutDays`), newest-first: `infiniteDays[0]` is today and
+ * `infiniteDays.last()` is today minus five years. [realDays] are the
+ * repository's PR-flagged days.
  */
 data class HomeUiState(
     val loaded: Boolean = false,
     val infiniteDays: List<WorkoutDay> = emptyList(),
     val realDays: List<WorkoutDay> = emptyList(),
     val knownExercises: List<Exercise> = emptyList(),
-    val selectedDate: String = "",
-    val todayPosition: Int = -1
+    val selectedDate: String = ""
 )
 
 /**
- * Backs [MainActivity]'s pager.
+ * Backs [MainActivity]'s Home journal feed.
  *
- * Owns the legacy "infinite" ten-year day window (built exactly once, like the
- * legacy `infiniteWorkoutDays` cache) and maps [WorkoutRepository.appState] into a
+ * Owns the legacy "infinite" day window (built exactly once, like the legacy
+ * `infiniteWorkoutDays` cache) as a descending, newest-first list
+ * `[today .. today-5y]`, and maps [WorkoutRepository.appState] into a
  * [HomeUiState].
  */
 @HiltViewModel
@@ -49,12 +50,10 @@ class MainViewModel @Inject constructor(
 
     // Built once and kept stable across every emission, like the legacy cache.
     private val infiniteDays: List<WorkoutDay> = buildInfiniteDaysWindow()
-    private val todayPosition: Int = todayPositionIn(infiniteDays)
 
     private val _uiState = MutableStateFlow(
         HomeUiState(
-            infiniteDays = infiniteDays,
-            todayPosition = todayPosition
+            infiniteDays = infiniteDays
         )
     )
 
@@ -74,8 +73,7 @@ class MainViewModel @Inject constructor(
         infiniteDays = infiniteDays,
         realDays = state.workoutDays,
         knownExercises = state.knownExercises,
-        selectedDate = state.selectedDate,
-        todayPosition = todayPosition
+        selectedDate = state.selectedDate
     )
 
     /** Delegates to [WorkoutRepository.importCsv]. */
@@ -90,27 +88,23 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * Exact port of the legacy range computation in `MainActivity.initViewPager()`:
-     * one Calendar stepped back five years then forward ten.
+     * Builds the descending day window `[today .. today - 5 years]`.
+     *
+     * [buildInfiniteDays] is end-exclusive and ascending, so the range is
+     * constructed as `today - 5 years` (inclusive) through `today + 1 day`
+     * (exclusive) and then reversed; `[0]` is today and `last()` is
+     * today minus five years. No future days are included.
      */
     private fun buildInfiniteDaysWindow(): List<WorkoutDay> {
-        val c = Calendar.getInstance()
-        c.time = Date()
-        c.add(Calendar.YEAR, -5)
-        val startDate = c.time
-        c.add(Calendar.YEAR, +10)
-        val endDate = c.time
-        return buildInfiniteDays(startDate, endDate)
-    }
-
-    /** Port of legacy `getTodayPosition()`: index of today, or -1 when missing. */
-    private fun todayPositionIn(days: List<WorkoutDay>): Int {
-        val today = todayDateString()
-        for (i in days.indices) {
-            if (days[i].Date == today) {
-                return i
-            }
+        val now = Date()
+        val start = Calendar.getInstance().apply {
+            time = now
+            add(Calendar.YEAR, -5)
         }
-        return -1
+        val end = Calendar.getInstance().apply {
+            time = now
+            add(Calendar.DAY_OF_YEAR, 1)
+        }
+        return buildInfiniteDays(start.time, end.time).reversed()
     }
 }

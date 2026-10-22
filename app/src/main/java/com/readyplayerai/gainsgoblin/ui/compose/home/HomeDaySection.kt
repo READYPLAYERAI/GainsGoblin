@@ -6,26 +6,18 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -66,41 +58,37 @@ private val TNUM = TextStyle(fontFeatureSettings = "tnum")
 private fun tnum(size: androidx.compose.ui.unit.TextUnit, weight: FontWeight? = null) =
     if (weight == null) TNUM.copy(fontSize = size) else TNUM.copy(fontSize = size, fontWeight = weight)
 
-private data class PrCelebration(
+private data class DayPrCelebration(
     val exerciseName: String?,
     val isRepPr: Boolean,
     @param:StringRes val labelRes: Int,
 )
 
 /**
- * One page of the Home pager: the exercise cards for a training day, or the
- * friendly rest-day empty state when the real day has no exercises.
+ * One section of Home's vertical journal feed: renders exactly what the
+ * old pager page rendered — summary chips + exercise cards for a training day, or the big
+ * rest-day empty state for an empty day. The day header lives in the flexible app bar.
  */
 @Composable
-fun HomeDayPage(
+fun HomeDaySection(
     day: WorkoutDay,
     realDay: WorkoutDay?,
     categoryFor: (String?) -> String?,
     onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
-    listState: LazyListState? = null,
+    modifier: Modifier = Modifier,
 ) {
     val exercises = realDay?.Exercises
     if (!exercises.isNullOrEmpty()) {
+        SummaryChips(day = day, realDay = realDay)
         val pr = remember(exercises) { findPr(exercises) }
-        LazyColumn(
-            state = listState ?: rememberLazyListState(),
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp),
-        ) {
-            items(exercises) { exercise ->
-                ExerciseCard(
-                    exercise = exercise,
-                    day = day,
-                    categoryFor = categoryFor,
-                    onExerciseClick = onExerciseClick,
-                    pr = pr,
-                )
-            }
+        exercises.forEach { exercise ->
+            ExerciseCard(
+                exercise = exercise,
+                day = day,
+                categoryFor = categoryFor,
+                onExerciseClick = onExerciseClick,
+                pr = pr,
+            )
         }
     } else {
         RestDayEmptyState(day = day)
@@ -113,7 +101,7 @@ private fun ExerciseCard(
     day: WorkoutDay,
     categoryFor: (String?) -> String?,
     onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
-    pr: PrCelebration?,
+    pr: DayPrCelebration?,
 ) {
     val category = categoryFor(exercise.Exercise)
     Column(
@@ -330,8 +318,7 @@ private fun RestDayEmptyState(day: WorkoutDay) {
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .fillMaxWidth()
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
@@ -377,12 +364,12 @@ private fun RestDayEmptyState(day: WorkoutDay) {
     }
 }
 
-private fun findPr(exercises: List<WorkoutExercise>): PrCelebration? {
+private fun findPr(exercises: List<WorkoutExercise>): DayPrCelebration? {
     exercises.firstOrNull { it.MaxRepsPR }?.let {
-        return PrCelebration(it.Exercise, isRepPr = true, labelRes = R.string.home_pr_rep)
+        return DayPrCelebration(it.Exercise, isRepPr = true, labelRes = R.string.home_pr_rep)
     }
     exercises.firstOrNull { it.MaxWeightPR }?.let {
-        return PrCelebration(it.Exercise, isRepPr = false, labelRes = R.string.home_pr_weight)
+        return DayPrCelebration(it.Exercise, isRepPr = false, labelRes = R.string.home_pr_weight)
     }
     return null
 }
