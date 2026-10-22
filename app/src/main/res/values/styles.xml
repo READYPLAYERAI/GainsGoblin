@@ -12,6 +12,8 @@
         <item name="windowNoTitle">true</item>
         <item name="android:statusBarColor">@color/core_grey_02</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/core_grey_02</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
 

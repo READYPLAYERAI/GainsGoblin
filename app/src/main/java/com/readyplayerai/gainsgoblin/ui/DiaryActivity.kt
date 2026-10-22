@@ -1,5 +1,6 @@
 package com.readyplayerai.gainsgoblin.ui
 
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -36,6 +37,7 @@ class DiaryActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_diary)
 
         setupTopBar { GainsGoblinTopBar(title = "Diary") }

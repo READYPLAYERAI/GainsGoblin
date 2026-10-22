@@ -1,6 +1,7 @@
 package com.readyplayerai.gainsgoblin.ui
 
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.collectAsState
@@ -27,6 +28,7 @@ class AddExerciseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_add_exercise)
 
         findViewById<ComposeView>(R.id.add_exercise_view).setContent {

@@ -19,5 +19,7 @@
     <color name="core_grey_40">#919191</color>
     <color name="core_grey_55">#6a6a6a</color>
 
+    <color name="app_dark_surface">#121212</color>
+
 
 </resources>

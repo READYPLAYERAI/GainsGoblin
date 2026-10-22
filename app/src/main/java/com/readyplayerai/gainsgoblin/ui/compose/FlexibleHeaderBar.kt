@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,8 +53,9 @@ fun FlexibleHeaderBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(lerp(152.dp, 64.dp, f))
-            .background(MaterialTheme.colorScheme.surface),
+            .background(MaterialTheme.colorScheme.surface)
+            .statusBarsPadding()
+            .height(lerp(152.dp, 64.dp, f)),
     ) {
         Row(
             modifier = Modifier
