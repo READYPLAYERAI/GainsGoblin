@@ -177,6 +177,10 @@ fun HomeScreen(
             val realDay = uiState.realDays.firstOrNull { it.Date == day.Date }
             val st = rememberScrollState()
             pageScrolls[page] = st
+            // Arrival is composition: every (re)composed page starts at its top, so any day
+            // change (fling, pill tap, strip scrub, picker, HOME) lands top-of-day; a page that
+            // never disposes (tease-abort back onto it) keeps its place.
+            LaunchedEffect(page) { st.scrollTo(0) }
             val conn = rememberDayBoundaryPagingConnection(
                 pagerState = pagerState,
                 childScroll = st,
