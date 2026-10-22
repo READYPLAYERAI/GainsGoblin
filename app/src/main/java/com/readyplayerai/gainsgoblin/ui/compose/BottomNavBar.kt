@@ -3,12 +3,18 @@ package com.readyplayerai.gainsgoblin.ui.compose
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.readyplayerai.gainsgoblin.R
 
 /** The five top-level screens, in bottom bar display order. */
@@ -37,7 +43,22 @@ fun GainsGoblinBottomBar(
     selectedTab: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
 ) {
-    NavigationBar {
+    val outlineVariant = MaterialTheme.colorScheme.outlineVariant
+    val surfaceContainer = MaterialTheme.colorScheme.surfaceContainer
+    NavigationBar(
+        modifier = Modifier
+            .drawWithContent {
+                drawContent()
+                val stroke = 1.dp.toPx()
+                drawLine(
+                    color = outlineVariant,
+                    strokeWidth = stroke,
+                    start = Offset(0f, stroke / 2f),
+                    end = Offset(size.width, stroke / 2f),
+                )
+            },
+        containerColor = surfaceContainer,
+    ) {
         bottomNavItems.forEach { item ->
             NavigationBarItem(
                 selected = item.tab == selectedTab,
@@ -49,6 +70,9 @@ fun GainsGoblinBottomBar(
                     )
                 },
                 label = { Text(stringResource(item.labelRes)) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedTextColor = MaterialTheme.colorScheme.secondary,
+                ),
             )
         }
     }

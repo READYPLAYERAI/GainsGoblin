@@ -38,4 +38,14 @@
     <string name="top_bar_add_exercise">New exercise</string>
     <string name="top_bar_personal_records">Personal Records</string>
 
+    <string name="home_rest_day">Rest day</string>
+    <string name="home_rest_day_hint">Nothing logged for %1$s. Recovery is where the growth happens.</string>
+    <string name="home_rest_day_chip">Rest day — nothing logged</string>
+    <string name="home_set_label">Set %1$d</string>
+    <string name="home_pr_rep">REP PR</string>
+    <string name="home_pr_weight">WT PR</string>
+    <string name="home_pick_date">Pick a date</string>
+    <string name="home_prev_month">Previous month</string>
+    <string name="home_next_month">Next month</string>
+
 </resources>
