@@ -94,4 +94,25 @@
     <string name="settings_delete_confirm">Delete</string>
     <string name="settings_data_deleted">Data deleted</string>
 
+    <string name="add_exercise_weight_label">Weight</string>
+    <string name="add_exercise_reps_label">Reps</string>
+    <string name="add_exercise_kg">kg</string>
+    <string name="add_exercise_reps_unit">reps</string>
+    <string name="add_exercise_todays_sets">Today\'s sets</string>
+    <string name="add_exercise_clear">Clear</string>
+    <string name="add_exercise_update">Update</string>
+    <string name="add_exercise_cd_increase_weight">Increase weight</string>
+    <string name="add_exercise_cd_decrease_weight">Decrease weight</string>
+    <string name="add_exercise_cd_increase_reps">Increase reps</string>
+    <string name="add_exercise_cd_decrease_reps">Decrease reps</string>
+    <string name="add_exercise_cd_more">More actions for set</string>
+    <string name="add_exercise_edit">Edit</string>
+    <string name="add_exercise_delete_title">Delete set?</string>
+    <string name="add_exercise_delete_body">This set will be removed from this day.</string>
+    <string name="add_exercise_empty_inputs">Please write Weight and Reps</string>
+    <string name="add_exercise_invalid_inputs">Please write correct Weight and Reps</string>
+    <string name="add_exercise_set_added">Set Added</string>
+    <string name="add_exercise_set_updated">Set Updated</string>
+    <string name="add_exercise_set_deleted">Set Deleted</string>
+
 </resources>

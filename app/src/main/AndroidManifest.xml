@@ -43,7 +43,8 @@
             android:parentActivityName=".ui.ChartsActivity" />
         <activity
             android:name=".ui.AddExerciseActivity"
-            android:label="Add Exercise" />
+            android:label="Add Exercise"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.DiaryActivity"
             android:label="Diary"
