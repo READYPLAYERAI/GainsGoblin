@@ -40,3 +40,6 @@ scripts/
 
 # Local notes (deferred items, machine-specific references — not part of the repo)
 notes/
+
+# Local design studies (not part of the app)
+design/
