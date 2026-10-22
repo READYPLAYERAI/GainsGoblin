@@ -82,27 +82,27 @@ private val TricepsShape = GenericShape { size, _ ->
     close()
 }
 
-/** Diamond marker: a lightly rounded square rotated 45°, filling the marker slot. */
+/**
+ * Rounded diamond marker: tips touch the box edges, so the diagonal equals the
+ * marker size.
+ */
 private val AbsShape = GenericShape { size, _ ->
     val w = size.width
     val h = size.height
     val r = 0.18f
     val cx = 0.5f * w
     val cy = 0.5f * h
-    // Top corner
+    // Straight edges stop r from each tip; the quadratic handles overshoot the tip so
+    // the rounded apex lands exactly on the box edge (diamond diagonal == box size).
     moveTo(cx * (1f + r), cy * r)
-    // Right corner
     lineTo(w * (1f - 0.5f * r), cy * (1f - r))
-    quadraticBezierTo(w, cy, w * (1f - 0.5f * r), cy * (1f + r))
-    // Bottom corner
+    quadraticBezierTo(w * (1f + 0.5f * r), cy, w * (1f - 0.5f * r), cy * (1f + r)) // right tip
     lineTo(cx * (1f + r), h * (1f - 0.5f * r))
-    quadraticBezierTo(cx, h, cx * (1f - r), h * (1f - 0.5f * r))
-    // Left corner
+    quadraticBezierTo(cx, h * (1f + 0.5f * r), cx * (1f - r), h * (1f - 0.5f * r)) // bottom tip
     lineTo(cx * r, cy * (1f + r))
-    quadraticBezierTo(0f, cy, cx * r, cy * (1f - r))
-    // Back to the top corner
+    quadraticBezierTo(-0.5f * r * w, cy, cx * r, cy * (1f - r)) // left tip
     lineTo(cx * (1f - r), cy * r)
-    quadraticBezierTo(cx, 0f, cx * (1f + r), cy * r)
+    quadraticBezierTo(cx, -0.5f * r * h, cx * (1f + r), cy * r) // back to top tip
     close()
 }
 
@@ -163,15 +163,15 @@ fun CategoryIcon(category: String?, modifier: Modifier = Modifier) {
 }
 
 /**
- * Standalone filled category marker, e.g. for chips or dense rows. Abs renders at
- * 82% scale to match the legend. Decorative: no content description.
+ * Standalone filled category marker, e.g. for chips or dense rows. Abs renders as a
+ * diamond whose diagonal equals [size], so it reads equal in presence to the other
+ * categories. Decorative: no content description.
  */
 @Composable
 fun CategoryMarker(category: String?, size: Dp = 22.dp, modifier: Modifier = Modifier) {
-    val isAbs = category?.lowercase() == "abs"
     Box(
         modifier = modifier
-            .size(if (isAbs) size * 0.82f else size)
+            .size(size)
             .clip(categoryShape(category))
             .background(categoryColor(category)),
     )
