@@ -23,7 +23,9 @@ data class AppState(
     /** Personal-record maps computed from [workoutDays] and [knownExercises]. */
     val personalRecords: PersonalRecords = emptyPersonalRecords(),
     /** The currently selected `yyyy-MM-dd` date string. */
-    val selectedDate: String = todayDateString()
+    val selectedDate: String = todayDateString(),
+    /** Non-null when the one-time legacy migration failed and needs recovery. */
+    val storageError: String? = null
 )
 
 /**
