@@ -40,3 +40,28 @@ fun normalizeDate(raw: String): String {
     require(DATE_PATTERN.matches(candidate)) { "Invalid date: '$raw'" }
     return candidate
 }
+
+internal fun mergeExercisesForImport(
+    sets: List<ImportedSet>,
+    importedExercises: List<Exercise>
+): List<Exercise> {
+    val result = LinkedHashMap<String, Exercise>()
+    importedExercises.forEach { exercise ->
+        val name = exercise.Name
+        if (!name.isNullOrBlank()) {
+            result[name] = exercise
+        }
+    }
+    sets.forEach { set ->
+        val name = set.exerciseName
+        if (!name.isNullOrBlank()) {
+            val existing = result[name]
+            if (existing == null) {
+                result[name] = Exercise(name, set.category).also { it.favorite = null }
+            } else if (existing.BodyPart == null) {
+                existing.BodyPart = set.category
+            }
+        }
+    }
+    return result.values.toList()
+}

@@ -1,12 +1,7 @@
 package com.readyplayerai.gainsgoblin.data
 
-import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
-import android.util.Log
 import com.readyplayerai.gainsgoblin.data.backup.BackupExportResult
 import com.readyplayerai.gainsgoblin.data.backup.BackupService
 import com.readyplayerai.gainsgoblin.data.backup.ImportMode
@@ -22,15 +17,11 @@ import com.readyplayerai.gainsgoblin.domain.todayDateString
 import com.readyplayerai.gainsgoblin.model.Exercise
 import com.readyplayerai.gainsgoblin.model.WorkoutSet
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,24 +30,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-private const val TAG = "WorkoutRepository"
-
-/**
- * Result of [WorkoutRepository.exportCsv].
- *
- * [message] carries the legacy user-facing text; [isError] says whether it is an
- * error message. The repository never shows toasts itself.
- */
-data class ExportResult(val message: String, val isError: Boolean)
-
-/**
- * Result of [WorkoutRepository.importCsv].
- *
- * [success] mirrors the legacy boolean; [error] carries the legacy `e.toString()`
- * text so the caller can toast it on failure.
- */
-data class ImportCsvResult(val success: Boolean, val error: String? = null)
 
 /**
  * Single source of truth for persisted workout data.
@@ -77,6 +50,7 @@ class WorkoutRepository @Inject constructor(
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var observationJob: Job? = null
 
     private val selectedDateFlow = MutableStateFlow(todayDateString())
     private val appStateFlow = MutableStateFlow(AppState(loaded = false))
@@ -98,7 +72,13 @@ class WorkoutRepository @Inject constructor(
 
     init {
         scope.launch {
-            when (val result = migrator.migrateIfNeeded()) {
+            val result = try {
+                migrator.migrateIfNeeded()
+            } catch (e: Exception) {
+                appStateFlow.value = AppState(loaded = true, storageError = e.toString())
+                return@launch
+            }
+            when (result) {
                 is MigrationResult.Failed -> {
                     legacyRawWorkouts = result.rawWorkouts
                     legacyRawKnown = result.rawKnown
@@ -110,10 +90,18 @@ class WorkoutRepository @Inject constructor(
     }
 
     private fun observeRoom() {
-        scope.launch {
-            combine(store.sets, store.exercises) { sets, exercises ->
-                buildState(sets, exercises)
-            }.collect { appStateFlow.value = it }
+        observationJob?.cancel()
+        observationJob = scope.launch {
+            try {
+                combine(store.sets, store.exercises) { sets, exercises ->
+                    buildState(sets, exercises)
+                }.collect { appStateFlow.value = it }
+            } catch (e: Exception) {
+                appStateFlow.value = appStateFlow.value.copy(
+                    loaded = true,
+                    storageError = e.toString()
+                )
+            }
         }
     }
 
@@ -224,90 +212,6 @@ class WorkoutRepository @Inject constructor(
     // Import / export
     // ---------------------------------------------------------------------------------
 
-    /**
-     * Temporary legacy CSV import wrapper (removed in a later step).
-     *
-     * Delegates to [BackupService], which detects the format and snapshots the
-     * current data before applying the import. A failure returns a failed
-     * [ImportCsvResult] and never clears existing data.
-     */
-    suspend fun importCsv(uri: Uri): ImportCsvResult {
-        return try {
-            backupService.importFrom(uri, ImportMode.REPLACE)
-            ImportCsvResult(success = true)
-        } catch (e: Exception) {
-            ImportCsvResult(success = false, error = e.toString())
-        }
-    }
-
-    /**
-     * Temporary legacy CSV export wrapper (removed in a later step).
-     *
-     * Still writes the legacy Gains Goblin CSV through the old MediaStore path, but
-     * reads its rows from the Room-backed [currentState]. Returns the legacy message
-     * text and whether it represents an error.
-     */
-    suspend fun exportCsv(): ExportResult = withContext(Dispatchers.IO) {
-        val fileName = "gainsgoblin" + SimpleDateFormat("_yyyy-MM-dd_HH:mm:ss").format(Date())
-        try {
-            var outputStream: OutputStream? = null
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val values = ContentValues()
-                values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                values.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-                values.put(
-                    MediaStore.MediaColumns.RELATIVE_PATH,
-                    Environment.DIRECTORY_DOCUMENTS + "/Gains Goblin"
-                )
-                val extVolumeUri = MediaStore.Files.getContentUri("external")
-                val fileUri = context.contentResolver.insert(extVolumeUri, values)
-                outputStream = context.contentResolver.openOutputStream(fileUri!!)
-            } else {
-                val root = File(
-                    Environment.getExternalStorageDirectory().toString() + File.separator + "DIRECTORY_NAME",
-                    "images"
-                )
-                val file = File(root, fileName)
-                Log.d(TAG, "saveFile: file path - " + file.absolutePath)
-                outputStream = FileOutputStream(file)
-            }
-            outputStream!!.write("Date,Exercise,Category,Weight (kg),Reps,Comment\n".toByteArray())
-
-            val days = currentState().workoutDays
-            for (i in days.indices) {
-                val exercises = days[i].Exercises!!
-                for (j in exercises.indices) {
-                    val exerciseComment = exercises[j].Comment ?: ""
-                    val sets = exercises[j].Sets!!
-                    for (k in sets.indices) {
-                        val date = exercises[j].Date!!
-                        val exerciseName = sets[k].exerciseName!!
-                        val exerciseCategory = sets[k].category ?: ""
-                        val weight = sets[k].weight!!
-                        val reps = sets[k].reps!!
-                        outputStream!!.write(
-                            (
-                                date + "," + exerciseName + "," + exerciseCategory + "," +
-                                    weight + "," + reps + "," + exerciseComment + "\n"
-                                ).toByteArray()
-                        )
-                    }
-                }
-            }
-            outputStream!!.close()
-            ExportResult(
-                "Backup saved in " + Environment.DIRECTORY_DOCUMENTS + "/Gains Goblin",
-                false
-            )
-        } catch (e: Exception) {
-            ExportResult(e.toString(), true)
-        }
-    }
-
-    // ---------------------------------------------------------------------------------
-    // Backup delegates
-    // ---------------------------------------------------------------------------------
-
     suspend fun previewImport(uri: Uri): ImportPreview = backupService.previewFrom(uri)
 
     suspend fun importBackup(uri: Uri, mode: ImportMode): ImportResult =
@@ -330,19 +234,29 @@ class WorkoutRepository @Inject constructor(
      * refreshed and the error surfaced. Only called after a failed startup, so there
      * is no existing Room observer to duplicate.
      */
-    suspend fun retryMigration(): Boolean {
-        return when (val result = migrator.migrateIfNeeded()) {
-            is MigrationResult.Failed -> {
-                legacyRawWorkouts = result.rawWorkouts
-                legacyRawKnown = result.rawKnown
-                appStateFlow.value = appStateFlow.value.copy(storageError = result.error)
-                false
+    suspend fun retryMigration(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            when (val result = migrator.migrateIfNeeded()) {
+                is MigrationResult.Failed -> {
+                    legacyRawWorkouts = result.rawWorkouts
+                    legacyRawKnown = result.rawKnown
+                    appStateFlow.value = appStateFlow.value.copy(storageError = result.error)
+                    false
+                }
+                else -> {
+                    legacyRawWorkouts = null
+                    legacyRawKnown = null
+                    appStateFlow.value = appStateFlow.value.copy(storageError = null)
+                    observeRoom()
+                    true
+                }
             }
-            else -> {
-                appStateFlow.value = appStateFlow.value.copy(storageError = null)
-                observeRoom()
-                true
-            }
+        } catch (e: Exception) {
+            appStateFlow.value = appStateFlow.value.copy(
+                loaded = true,
+                storageError = e.toString()
+            )
+            false
         }
     }
 

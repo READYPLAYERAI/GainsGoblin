@@ -2,6 +2,7 @@ package com.readyplayerai.gainsgoblin.data.legacy
 
 import android.content.Context
 import androidx.room.withTransaction
+import com.readyplayerai.gainsgoblin.data.backup.BackupFileStore
 import com.readyplayerai.gainsgoblin.data.db.GainsGoblinDatabase
 import com.readyplayerai.gainsgoblin.data.db.MetaEntity
 import com.readyplayerai.gainsgoblin.data.db.WorkoutDao
@@ -28,6 +29,7 @@ class LegacyMigrator @Inject constructor(
     @ApplicationContext private val context: Context,
     private val storeReader: LegacyStoreReader,
     private val database: GainsGoblinDatabase,
+    private val backupFileStore: BackupFileStore,
     private val dao: WorkoutDao
 ) {
     suspend fun migrateIfNeeded(): MigrationResult {
@@ -73,6 +75,7 @@ class LegacyMigrator @Inject constructor(
                     (raw.rawKnown ?: ""),
                 Charsets.UTF_8
             )
+            backupFileStore.prune(3)
         } catch (e: Exception) {
             return MigrationResult.Failed(e.toString(), raw.rawWorkouts, raw.rawKnown)
         }

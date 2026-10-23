@@ -4,8 +4,6 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.readyplayerai.gainsgoblin.data.AppState
-import com.readyplayerai.gainsgoblin.data.ExportResult
-import com.readyplayerai.gainsgoblin.data.ImportCsvResult
 import com.readyplayerai.gainsgoblin.data.WorkoutRepository
 import com.readyplayerai.gainsgoblin.domain.buildInfiniteDays
 import com.readyplayerai.gainsgoblin.model.Exercise
@@ -32,7 +30,9 @@ data class JournalUiState(
     val infiniteDays: List<WorkoutDay> = emptyList(),
     val realDays: List<WorkoutDay> = emptyList(),
     val knownExercises: List<Exercise> = emptyList(),
-    val selectedDate: String = ""
+    val selectedDate: String = "",
+    val storageError: String? = null,
+    val hasLegacyRecoveryData: Boolean = false
 )
 
 /**
@@ -73,19 +73,21 @@ class JournalViewModel @Inject constructor(
         infiniteDays = infiniteDays,
         realDays = state.workoutDays,
         knownExercises = state.knownExercises,
-        selectedDate = state.selectedDate
+        selectedDate = state.selectedDate,
+        storageError = state.storageError,
+        hasLegacyRecoveryData = repository.hasLegacyRecoveryData()
     )
-
-    /** Delegates to [WorkoutRepository.importCsv]. */
-    suspend fun importCsv(uri: Uri): ImportCsvResult = repository.importCsv(uri)
-
-    /** Delegates to [WorkoutRepository.exportCsv]. */
-    suspend fun exportCsv(): ExportResult = repository.exportCsv()
 
     /** Persists the selected date through the repository. */
     fun selectDate(date: String) {
         viewModelScope.launch { repository.selectDate(date) }
     }
+
+    /** Retries the one-time legacy migration; true on success. */
+    suspend fun retryMigration(): Boolean = repository.retryMigration()
+
+    /** Writes the retained raw legacy payloads to [uri]; false when there is nothing or the write fails. */
+    suspend fun exportLegacyRaw(uri: Uri): Boolean = repository.exportLegacyRaw(uri)
 
     /**
      * Builds the descending day window `[today .. today - 5 years]`.

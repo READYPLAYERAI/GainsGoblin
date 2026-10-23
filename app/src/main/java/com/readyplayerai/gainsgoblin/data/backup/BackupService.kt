@@ -3,11 +3,12 @@ package com.readyplayerai.gainsgoblin.data.backup
 import android.content.Context
 import android.net.Uri
 import com.readyplayerai.gainsgoblin.data.db.RoomWorkoutStore
-import com.readyplayerai.gainsgoblin.model.Exercise
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class ImportPreview(
     val format: BackupFormat,
@@ -42,19 +43,19 @@ class BackupService @Inject constructor(
     private val store: RoomWorkoutStore,
     private val fileStore: BackupFileStore
 ) {
-    suspend fun previewFrom(uri: Uri): ImportPreview {
+    suspend fun previewFrom(uri: Uri): ImportPreview = withContext(Dispatchers.IO) {
         val bytes = readBytes(uri)
         val format = BackupDetector.detect(bytes)
         val parsed = parse(bytes, format)
-        val exercises = mergeExercises(parsed.sets, parsed.exercises)
-        return ImportPreview(format, parsed.sets.size, exercises.size, parsed.warnings)
+        val exercises = mergeExercisesForImport(parsed.sets, parsed.exercises)
+        ImportPreview(format, parsed.sets.size, exercises.size, parsed.warnings)
     }
 
-    suspend fun importFrom(uri: Uri, mode: ImportMode): ImportResult {
+    suspend fun importFrom(uri: Uri, mode: ImportMode): ImportResult = withContext(Dispatchers.IO) {
         val bytes = readBytes(uri)
         val format = BackupDetector.detect(bytes)
         val parsed = parse(bytes, format)
-        val mergedExercises = mergeExercises(parsed.sets, parsed.exercises)
+        val mergedExercises = mergeExercisesForImport(parsed.sets, parsed.exercises)
         val importedSets = parsed.sets.map { it.toWorkoutSet() }
 
         val (currentSets, currentExercises) = store.snapshot()
@@ -71,7 +72,7 @@ class BackupService @Inject constructor(
             lastImportBackupName = backupFile.name
         )
 
-        return ImportResult(
+        ImportResult(
             format = format,
             mode = mode,
             setCount = importedSets.size,
@@ -81,16 +82,17 @@ class BackupService @Inject constructor(
         )
     }
 
-    suspend fun exportTo(uri: Uri): BackupExportResult {
+    suspend fun exportTo(uri: Uri): BackupExportResult = withContext(Dispatchers.IO) {
         val (sets, exercises) = store.snapshot()
         val json = JsonBackup.encode(BackupData(sets, exercises))
         writeBytes(uri, json.toByteArray(Charsets.UTF_8))
-        return BackupExportResult(BackupFormat.GAINS_GOBLIN_JSON, sets.size, exercises.size)
+        BackupExportResult(BackupFormat.GAINS_GOBLIN_JSON, sets.size, exercises.size)
     }
 
-    suspend fun undoLastImport(): Boolean {
-        val name = store.meta("last_import_backup")?.takeIf { it.isNotBlank() } ?: return false
-        val text = fileStore.readBackup(name) ?: return false
+    suspend fun undoLastImport(): Boolean = withContext(Dispatchers.IO) {
+        val name = store.meta("last_import_backup")?.takeIf { it.isNotBlank() }
+            ?: return@withContext false
+        val text = fileStore.readBackup(name) ?: return@withContext false
         val parsed = JsonBackup.decode(text)
         val sets = parsed.sets.map { it.toWorkoutSet() }
         store.applyImport(
@@ -100,7 +102,7 @@ class BackupService @Inject constructor(
             replaceExercises = true,
             lastImportBackupName = ""
         )
-        return true
+        true
     }
 
     suspend fun lastImportBackupName(): String? =
@@ -116,36 +118,11 @@ class BackupService @Inject constructor(
     }
 
     private fun parse(bytes: ByteArray, format: BackupFormat): ParsedImport {
-        val text = String(bytes, Charsets.UTF_8)
+        val text = String(bytes, Charsets.UTF_8).removePrefix("\uFEFF")
         return when (format) {
             BackupFormat.GAINS_GOBLIN_CSV -> LegacyCsv.decode(text)
             BackupFormat.FITNOTES_CSV -> FitNotesCsv.decode(text)
             BackupFormat.GAINS_GOBLIN_JSON -> JsonBackup.decode(text)
         }
-    }
-
-    private fun mergeExercises(
-        sets: List<ImportedSet>,
-        importedExercises: List<Exercise>
-    ): List<Exercise> {
-        val result = LinkedHashMap<String, Exercise>()
-        importedExercises.forEach { exercise ->
-            val name = exercise.Name
-            if (!name.isNullOrBlank()) {
-                result[name] = exercise
-            }
-        }
-        sets.forEach { set ->
-            val name = set.exerciseName
-            if (!name.isNullOrBlank()) {
-                val existing = result[name]
-                if (existing == null) {
-                    result[name] = Exercise(name, set.category).also { it.favorite = null }
-                } else if (existing.BodyPart == null) {
-                    existing.BodyPart = set.category
-                }
-            }
-        }
-        return result.values.toList()
     }
 }

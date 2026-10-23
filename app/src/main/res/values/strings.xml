@@ -156,11 +156,35 @@
     <string name="settings_source_code_summary">Contributions are always welcome</string>
     <string name="settings_licence_title">Licence</string>
     <string name="settings_licence_summary">GNU General Public Licence, version 3</string>
-    <string name="settings_import_warning_body">This will overwrite all saved data</string>
+    <string name="settings_import_warning_body">Choose Merge to add this backup, or Replace to overwrite your workout history. A backup is saved first.</string>
     <string name="settings_import_overwrite">Overwrite</string>
+    <string name="settings_import_choose_file">Choose backup</string>
+    <string name="settings_import_format_json">Gains Goblin JSON backup</string>
+    <string name="settings_import_format_legacy">Gains Goblin CSV (old backup)</string>
+    <string name="settings_import_format_fitnotes">FitNotes CSV</string>
+    <string name="settings_import_mode_title">Import backup</string>
+    <string name="settings_import_mode_summary">%1$d sets · %2$d exercises</string>
+    <string name="settings_import_merge">Merge</string>
+    <string name="settings_import_replace">Replace</string>
+    <string name="settings_import_success">Imported %1$d sets</string>
+    <string name="settings_import_failed">Import failed: %1$s</string>
+    <string name="settings_undo_import_title">Undo last import</string>
+    <string name="settings_undo_import_summary">Restore the data from before your last import</string>
+    <string name="settings_undo_import_warning">Undo the last import and restore the previous data?</string>
+    <string name="settings_undo_import_done">Last import undone</string>
+    <string name="settings_undo_import_none">Nothing to undo</string>
+    <string name="settings_backup_exported">Backup exported</string>
     <string name="settings_delete_warning_body">Delete all saved data?</string>
     <string name="settings_delete_confirm">Delete</string>
     <string name="settings_data_deleted">Data deleted</string>
+
+    <string name="storage_recovery_title">Couldn\'t load your data</string>
+    <string name="storage_recovery_body">Your existing data is still on this device. Export a raw recovery file or retry loading it.</string>
+    <string name="storage_recovery_export">Export raw data</string>
+    <string name="storage_recovery_retry">Retry</string>
+    <string name="storage_recovery_exported">Recovery file exported</string>
+    <string name="storage_recovery_export_failed">Could not export recovery file</string>
+    <string name="storage_recovery_retry_failed">Still could not load your data</string>
 
     <string name="add_exercise_weight_label">Weight</string>
     <string name="add_exercise_reps_label">Reps</string>

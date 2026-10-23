@@ -86,6 +86,25 @@ class JsonBackupTest {
     }
 
     @Test
+    fun leadingBomIsStrippedBeforeDecoding() {
+        val json = "\uFEFF" + """
+            {
+              "schemaVersion": 2,
+              "exportedAt": "2026-01-01T00:00:00Z",
+              "exercises": [],
+              "sets": [
+                {"date": "2026-01-05", "exercise": "Bench", "weight": 60.0, "reps": 8.0}
+              ]
+            }
+        """.trimIndent()
+
+        val parsed = JsonBackup.decode(json)
+
+        assertEquals(1, parsed.sets.size)
+        assertEquals("Bench", parsed.sets[0].exerciseName)
+    }
+
+    @Test
     fun nullExerciseNameInSetThrows() {
         val json = """
             {

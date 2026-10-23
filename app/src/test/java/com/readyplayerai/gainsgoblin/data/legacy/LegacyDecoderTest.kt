@@ -74,6 +74,22 @@ class LegacyDecoderTest {
     }
 
     @Test
+    fun duplicateKnownExerciseNamesAreCollapsedKeepingFirst() {
+        val snapshot = decodeLegacySnapshot(
+            null,
+            """[
+                {"Name":"Bench","BodyPart":"Chest","favorite":true},
+                {"Name":"Bench","BodyPart":"Chest","favorite":false},
+                {"Name":"Squat","BodyPart":"Legs","favorite":false}
+            ]"""
+        )
+
+        assertEquals(2, snapshot.exerciseCount)
+        assertEquals(listOf("Bench", "Squat"), snapshot.knownExercises.map { it.Name })
+        assertEquals(true, snapshot.knownExercises[0].favorite)
+    }
+
+    @Test
     fun malformedWorkoutsJsonThrows() {
         try {
             decodeLegacySnapshot("{not json", null)

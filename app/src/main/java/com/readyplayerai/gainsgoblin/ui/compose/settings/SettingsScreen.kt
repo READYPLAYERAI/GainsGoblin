@@ -39,6 +39,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.readyplayerai.gainsgoblin.R
+import com.readyplayerai.gainsgoblin.data.backup.BackupFormat
+import com.readyplayerai.gainsgoblin.data.backup.ImportMode
+import com.readyplayerai.gainsgoblin.data.backup.ImportPreview
 import com.readyplayerai.gainsgoblin.ui.compose.FlexibleHeaderBar
 
 /**
@@ -51,14 +54,20 @@ import com.readyplayerai.gainsgoblin.ui.compose.FlexibleHeaderBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onImportConfirm: () -> Unit,
+    hasUndoBackup: Boolean,
+    importPreview: ImportPreview?,
+    onImportPick: () -> Unit,
+    onImportMode: (ImportMode) -> Unit,
+    onImportCancel: () -> Unit,
     onExportClick: () -> Unit,
+    onUndoClick: () -> Unit,
     onDeleteConfirm: () -> Unit,
     onSourceCodeClick: () -> Unit,
     onLicenceClick: () -> Unit,
 ) {
     var showImportWarning by remember { mutableStateOf(false) }
     var showDeleteWarning by remember { mutableStateOf(false) }
+    var showUndoWarning by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val density = LocalDensity.current
@@ -106,8 +115,16 @@ fun SettingsScreen(
                     stringResource(R.string.settings_export_title),
                     stringResource(R.string.settings_export_summary),
                     R.drawable.ic_save_24px,
-                    onExportClick,
+                    onClick = onExportClick,
                 )
+            }
+            item(key = "undo") {
+                SettingsRow(
+                    stringResource(R.string.settings_undo_import_title),
+                    stringResource(R.string.settings_undo_import_summary),
+                    R.drawable.ic_history_24px,
+                    enabled = hasUndoBackup,
+                ) { showUndoWarning = true }
             }
             item(key = "clear") {
                 SettingsRow(
@@ -124,7 +141,7 @@ fun SettingsScreen(
                     stringResource(R.string.settings_source_code_title),
                     stringResource(R.string.settings_source_code_summary),
                     R.drawable.github,
-                    onSourceCodeClick,
+                    onClick = onSourceCodeClick,
                 )
             }
             item(key = "licence") {
@@ -132,7 +149,7 @@ fun SettingsScreen(
                     stringResource(R.string.settings_licence_title),
                     stringResource(R.string.settings_licence_summary),
                     R.drawable.ic_menu_book_24px,
-                    onLicenceClick,
+                    onClick = onLicenceClick,
                 )
             }
         }
@@ -146,12 +163,9 @@ fun SettingsScreen(
                 TextButton(
                     onClick = {
                         showImportWarning = false
-                        onImportConfirm()
+                        onImportPick()
                     },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
-                ) { Text(stringResource(R.string.settings_import_overwrite)) }
+                ) { Text(stringResource(R.string.settings_import_choose_file)) }
             },
             dismissButton = {
                 TextButton(onClick = { showImportWarning = false }) {
@@ -183,6 +197,75 @@ fun SettingsScreen(
             },
         )
     }
+
+    if (showUndoWarning) {
+        AlertDialog(
+            onDismissRequest = { showUndoWarning = false },
+            text = { Text(stringResource(R.string.settings_undo_import_warning)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUndoWarning = false
+                        onUndoClick()
+                    },
+                ) { Text(stringResource(R.string.settings_undo_import_title)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUndoWarning = false }) {
+                    Text(stringResource(R.string.exercises_cancel))
+                }
+            },
+        )
+    }
+
+    if (importPreview != null) {
+        AlertDialog(
+            onDismissRequest = onImportCancel,
+            title = { Text(stringResource(R.string.settings_import_mode_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        when (importPreview.format) {
+                            BackupFormat.GAINS_GOBLIN_JSON ->
+                                stringResource(R.string.settings_import_format_json)
+                            BackupFormat.GAINS_GOBLIN_CSV ->
+                                stringResource(R.string.settings_import_format_legacy)
+                            BackupFormat.FITNOTES_CSV ->
+                                stringResource(R.string.settings_import_format_fitnotes)
+                        }
+                    )
+                    Text(
+                        stringResource(
+                            R.string.settings_import_mode_summary,
+                            importPreview.setCount,
+                            importPreview.exerciseCount,
+                        )
+                    )
+                    importPreview.warnings.forEach { warning ->
+                        Text(warning)
+                    }
+                }
+            },
+            confirmButton = {
+                Row {
+                    TextButton(
+                        onClick = { onImportMode(ImportMode.REPLACE) },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) { Text(stringResource(R.string.settings_import_replace)) }
+                    TextButton(onClick = { onImportMode(ImportMode.MERGE) }) {
+                        Text(stringResource(R.string.settings_import_merge))
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onImportCancel) {
+                    Text(stringResource(R.string.exercises_cancel))
+                }
+            },
+        )
+    }
 }
 
 /** Section label above a settings group. */
@@ -206,6 +289,7 @@ private fun SettingsRow(
     title: String,
     summary: String,
     @DrawableRes icon: Int,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     Box(
@@ -214,7 +298,7 @@ private fun SettingsRow(
             .heightIn(min = 64.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),

@@ -9,12 +9,12 @@ import java.util.HashMap
 /**
  * Immutable snapshot of everything the app derives from persisted workout data.
  *
- * Produced by [WorkoutRepository] from a DataStore emission. [workoutDays] are the
+ * Produced by [WorkoutRepository] from Room flows. [workoutDays] are the
  * PR-flagged copies returned by `applyPrFlags`, so the aggregate/PR flags on each
  * exercise are already populated.
  */
 data class AppState(
-    /** True once at least one DataStore emission has been processed. */
+    /** True once at least one Room emission has been processed. */
     val loaded: Boolean = false,
     /** PR-flagged workout days, in persisted order (never re-sorted on load). */
     val workoutDays: List<WorkoutDay> = emptyList(),

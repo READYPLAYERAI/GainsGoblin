@@ -60,7 +60,8 @@ object JsonBackup {
     }
 
     fun decode(text: String): ParsedImport {
-        val backup = persistenceJson.decodeFromString(JsonBackupV2.serializer(), text)
+        val cleaned = text.removePrefix("\uFEFF")
+        val backup = persistenceJson.decodeFromString(JsonBackupV2.serializer(), cleaned)
         require(backup.schemaVersion == 2) {
             "Unsupported backup schema version: ${backup.schemaVersion}"
         }

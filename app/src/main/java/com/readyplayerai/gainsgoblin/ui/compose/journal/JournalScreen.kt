@@ -1,6 +1,7 @@
 package com.readyplayerai.gainsgoblin.ui.compose.journal
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,6 +73,8 @@ fun JournalScreen(
     onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
     onSelectDate: (date: String) -> Unit,
     scrollToTopTick: StateFlow<Int>? = null,
+    onExportRawData: () -> Unit,
+    onRetryStorage: () -> Unit,
 ) {
     if (!uiState.loaded || uiState.infiniteDays.isEmpty()) {
         Surface(
@@ -93,6 +97,36 @@ fun JournalScreen(
             }
         }
         return
+    }
+
+    if (uiState.storageError != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.storage_recovery_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.storage_recovery_body))
+                    Text(
+                        text = uiState.storageError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onRetryStorage) {
+                    Text(stringResource(R.string.storage_recovery_retry))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = onExportRawData,
+                    enabled = uiState.hasLegacyRecoveryData,
+                ) {
+                    Text(stringResource(R.string.storage_recovery_export))
+                }
+            },
+        )
     }
 
     val listState = rememberLazyListState()

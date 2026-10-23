@@ -37,21 +37,29 @@ fun decodeLegacySnapshot(rawWorkouts: String?, rawKnown: String?): LegacySnapsho
         exercise.favorite = exercise.favorite ?: false
     }
 
+    val dedupedExercises = LinkedHashMap<String, Exercise>()
+    for (exercise in knownExercises) {
+        val name = exercise.Name
+        if (!name.isNullOrBlank()) {
+            dedupedExercises.putIfAbsent(name, exercise)
+        }
+    }
+
     val sets = ArrayList<WorkoutSet>()
     for (day in days) {
         val daySets = day.Sets ?: continue
         sets.addAll(daySets)
     }
 
-    val fingerprint = fingerprintWorkoutData(sets, knownExercises)
+    val fingerprint = fingerprintWorkoutData(sets, dedupedExercises.values.toList())
 
     return LegacySnapshot(
         rawWorkouts = rawWorkouts,
         rawKnown = rawKnown,
         days = days,
-        knownExercises = knownExercises,
+        knownExercises = dedupedExercises.values.toList(),
         setCount = sets.size,
-        exerciseCount = knownExercises.size,
+        exerciseCount = dedupedExercises.size,
         fingerprint = fingerprint
     )
 }

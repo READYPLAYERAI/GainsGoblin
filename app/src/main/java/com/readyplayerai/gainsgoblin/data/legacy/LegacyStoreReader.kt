@@ -20,12 +20,16 @@ class LegacyStoreReader @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
     suspend fun read(): LegacyRaw {
-        val preferences = dataStore.data.first()
+        val preferences = try {
+            dataStore.data.first()
+        } catch (e: Exception) {
+            null
+        }
         val legacy = context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
 
-        val workouts = preferences[stringPreferencesKey("workouts")]
+        val workouts = preferences?.get(stringPreferencesKey("workouts"))
             ?: legacy.getString("workouts", null)
-        val known = preferences[stringPreferencesKey("known_exercises")]
+        val known = preferences?.get(stringPreferencesKey("known_exercises"))
             ?: legacy.getString("known_exercises", null)
 
         return LegacyRaw(workouts, known)
