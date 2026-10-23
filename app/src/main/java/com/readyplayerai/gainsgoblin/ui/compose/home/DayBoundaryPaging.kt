@@ -9,6 +9,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -47,6 +48,12 @@ import kotlinx.coroutines.launch
  *    drag ends on the first frame and a mid-gesture fling consumes the release velocity;
  *    `onPostFling` then sees `available.y == 0`, so fast releases are detected via the drag EMA
  *    (`lastDragEma`) plus the last feed direction (`lastFedDir`) instead of the release velocity.
+ *
+ * Separately, a released child scroll can decay to a stop strictly inside the bar's collapse
+ * travel (`(0, barTravelPx)`), leaving the flexible bar half-collapsed on a frozen animation
+ * frame (little-scroll bug, found 2026-10-23). `onPostFling` then snaps the child scroll to the
+ * nearest travel end — expanded (0) or fully collapsed — velocity-aware, so the bar only ever
+ * rests at f=0 or f=1.
  */
 internal val NoOpNestedScrollConnection = object : NestedScrollConnection {}
 
@@ -62,6 +69,9 @@ internal const val FLING_VELOCITY_PX_PER_S = 1200f
 /** Release velocity (px/s) below which a release counts as "no velocity left" (see onPostFling). */
 internal const val RELEASE_VELOCITY_FLOOR = 100f
 
+/** Release velocity (px/s) above which the post-release snap follows the release direction. */
+internal const val SNAP_FOLLOW_VELOCITY_PX_PER_S = 400f
+
 /** Smallest leftover delta (px) worth feeding into the pager. */
 internal const val FEED_MIN_DELTA = 0.1f
 
@@ -71,6 +81,9 @@ internal const val FEED_MIN_DELTA = 0.1f
  * @param pagerState the day pager being driven.
  * @param childScroll the page's inner vertical scroll state (its edge is the day boundary).
  * @param pageCount total number of pages, used to clamp fling targets.
+ * @param barTravelPx the Home top bar's total collapse travel in px (appbar 152→64dp + day
+ *   strip wrap height); the page scroll snaps to 0 or this value on release when it stops
+ *   mid-travel, so the bar never rests half-collapsed.
  * @param scope scope used to settle the pager after a fling.
  * @param pageScrolls per-page inner scroll states (keyed by pager index) so the arrival
  *   day can be reset to its top before the pager settles.
@@ -80,9 +93,12 @@ internal fun rememberDayBoundaryPagingConnection(
     pagerState: PagerState,
     childScroll: ScrollState,
     pageCount: Int,
+    barTravelPx: Float,
     scope: CoroutineScope,
     pageScrolls: Map<Int, ScrollState>,
-): NestedScrollConnection = remember(childScroll, pagerState, pageCount, pageScrolls) {
+): NestedScrollConnection = remember(
+    childScroll, pagerState, pageCount, pageScrolls, barTravelPx,
+) {
     object : NestedScrollConnection {
         var ema = 0f
         var lastT = 0L
@@ -91,6 +107,7 @@ internal fun rememberDayBoundaryPagingConnection(
         var flingFed = 0f
         var lastDragEma = 0f   // drag velocity EMA captured at release
         var lastFedDir = 0     // +1 forward (older), -1 backward; direction of the last boundary feed
+        var releaseVelocityY = 0f  // capture of onPreFling.available.y before the child's fling
 
         fun boundary(dy: Float): Boolean =
             (dy > 0f && childScroll.value <= 0) ||
@@ -151,6 +168,7 @@ internal fun rememberDayBoundaryPagingConnection(
             lastDragEma = ema
             ema = 0f
             flingFed = 0f
+            releaseVelocityY = available.y
             return Velocity.Zero
         }
 
@@ -158,6 +176,26 @@ internal fun rememberDayBoundaryPagingConnection(
             val wasFeeding = feeding
             inBoundary = false
             feeding = false
+            if (!wasFeeding && childScroll.value > 0 &&
+                childScroll.value < barTravelPx && childScroll.maxValue > barTravelPx
+            ) {
+                // Little-scroll bug (2026-10-23): a released child scroll can decay to a
+                // stop strictly inside the bar's collapse travel, resting the flexible bar
+                // half-collapsed (a frozen animation frame). Snap to the nearest travel
+                // end — expanded (0) or fully collapsed (barTravelPx) — so the bar only ever
+                // rests at f=0 or f=1. Velocity-aware: a significant release velocity picks
+                // its own side; otherwise nearest.
+                //
+                // This MUST run before the `if (!wasFeeding) return` below: a mid-content
+                // release exits there, so this block would otherwise be unreachable.
+                val target = if (abs(releaseVelocityY) > SNAP_FOLLOW_VELOCITY_PX_PER_S) {
+                    if (releaseVelocityY > 0f) 0 else barTravelPx.roundToInt()
+                } else {
+                    if (childScroll.value < barTravelPx / 2f) 0 else barTravelPx.roundToInt()
+                }
+                scope.launch { childScroll.animateScrollTo(target) }
+                return Velocity.Zero
+            }
             if (!wasFeeding) return Velocity.Zero
             val v = available.y
             val frac = pagerState.currentPageOffsetFraction

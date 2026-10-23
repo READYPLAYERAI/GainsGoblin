@@ -185,6 +185,7 @@ fun HomeScreen(
                 pagerState = pagerState,
                 childScroll = st,
                 pageCount = uiState.infiniteDays.size,
+                barTravelPx = barTravelPx,
                 scope = scope,
                 pageScrolls = pageScrolls,
             )
