@@ -250,7 +250,7 @@ fun ExercisesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(top = innerPadding.calculateTopPadding()),
         ) {
             Column(
                 modifier = Modifier
