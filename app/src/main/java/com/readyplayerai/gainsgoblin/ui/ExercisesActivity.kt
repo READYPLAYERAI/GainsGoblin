@@ -40,14 +40,22 @@ class ExercisesActivity : AppCompatActivity() {
                         intent.putExtra("exercise", name)
                         activity.startActivity(intent)
                     },
-                    onAddExercise = {
-                        startActivity(Intent(activity, CustomExerciseActivity::class.java))
+                    onAddExercise = { name, category, onResult ->
+                        lifecycleScope.launch {
+                            onResult(viewModel.addExercise(name, category))
+                        }
+                    },
+                    onToggleFavorite = { name, favorite ->
+                        lifecycleScope.launch { viewModel.setFavorite(name, favorite) }
                     },
                     onEditExercise = { oldName, newName, newCategory ->
                         lifecycleScope.launch { viewModel.editExercise(oldName, newName, newCategory) }
                     },
-                    onDeleteExercise = { name ->
-                        lifecycleScope.launch { viewModel.deleteExercise(name) }
+                    onDeleteExercise = { exercise ->
+                        lifecycleScope.launch { viewModel.deleteExercise(exercise.Name.orEmpty()) }
+                    },
+                    onRestoreExercise = { exercise ->
+                        lifecycleScope.launch { viewModel.restoreExercise(exercise) }
                     },
                 )
             }

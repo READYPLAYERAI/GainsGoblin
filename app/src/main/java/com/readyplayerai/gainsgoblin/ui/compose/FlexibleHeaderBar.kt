@@ -26,6 +26,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
@@ -38,6 +40,10 @@ import androidx.compose.ui.unit.sp
  * The title shrinks 38sp -> 22sp; the subtitle fades and collapses. Trailing
  * per-screen buttons supplied through the [actions] slot are vertically
  * centered against the title block.
+ *
+ * Heights, title sizes, and bottom padding are overridable via the
+ * corresponding parameters; their defaults preserve the standard
+ * 152dp/64dp, 38sp/22sp, and 28dp/12dp values.
  */
 @Composable
 fun FlexibleHeaderBar(
@@ -45,23 +51,29 @@ fun FlexibleHeaderBar(
     subtitle: String,
     collapseFraction: Float,
     modifier: Modifier = Modifier,
+    expandedHeight: Dp = 152.dp,
+    collapsedHeight: Dp = 64.dp,
+    expandedTitleSize: TextUnit = 38.sp,
+    collapsedTitleSize: TextUnit = 22.sp,
+    expandedBottomPadding: Dp = 28.dp,
+    collapsedBottomPadding: Dp = 12.dp,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val f = collapseFraction.coerceIn(0f, 1f)
-    val titleSize = (38f + (22f - 38f) * f).sp
+    val titleSize = (expandedTitleSize.value + (collapsedTitleSize.value - expandedTitleSize.value) * f).sp
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
-            .height(lerp(152.dp, 64.dp, f)),
+            .height(lerp(expandedHeight, collapsedHeight, f)),
     ) {
         Row(
             modifier = Modifier
                 .align(Alignment.Bottom)
                 .fillMaxWidth()
-                .padding(bottom = lerp(28.dp, 12.dp, f), end = 10.dp),
+                .padding(bottom = lerp(expandedBottomPadding, collapsedBottomPadding, f), end = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(

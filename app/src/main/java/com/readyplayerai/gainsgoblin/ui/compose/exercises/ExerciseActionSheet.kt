@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -23,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -37,6 +39,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.readyplayerai.gainsgoblin.R
@@ -52,12 +56,16 @@ private enum class EditAction { Rename, ChangeCategory }
 @Composable
 fun ExerciseActionSheet(
     exercise: Exercise,
+    onLogSets: () -> Unit,
+    onToggleFavorite: (favorite: Boolean) -> Unit,
     onDismiss: () -> Unit,
     onRename: (oldName: String, newName: String, newCategory: String?) -> Unit,
     onChangeCategory: (oldName: String, newName: String, newCategory: String?) -> Unit,
     onDelete: (name: String) -> Unit,
 ) {
+    val isFavorite = exercise.favorite == true
     val context = LocalContext.current
+    val favouriteLabel = stringResource(R.string.exercises_favourite)
     val categories = stringArrayResource(R.array.Categories)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -167,8 +175,66 @@ fun ExerciseActionSheet(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 12.dp, bottom = 2.dp),
                 )
+                Text(
+                    text = exercise.BodyPart.orEmpty(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 8.dp),
+                )
+                Button(
+                    onClick = onLogSets,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .height(52.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_fitness_center_24px),
+                        contentDescription = null,
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(R.string.exercises_log_sets))
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .clickable { onToggleFavorite(!isFavorite) }
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            if (isFavorite) R.drawable.ic_star_fill0_wght400_grad0_opsz48
+                            else R.drawable.ic_star_outline_24px
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        text = favouriteLabel,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Switch(
+                        checked = isFavorite,
+                        onCheckedChange = onToggleFavorite,
+                        modifier = Modifier.semantics {
+                            contentDescription = favouriteLabel
+                        },
+                    )
+                }
                 SheetActionRow(
                     label = stringResource(R.string.exercises_rename),
                     iconRes = R.drawable.ic_create_24px,

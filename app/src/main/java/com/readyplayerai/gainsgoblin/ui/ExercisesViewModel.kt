@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.readyplayerai.gainsgoblin.data.AppState
 import com.readyplayerai.gainsgoblin.data.WorkoutRepository
+import com.readyplayerai.gainsgoblin.domain.ExerciseStats
+import com.readyplayerai.gainsgoblin.domain.exerciseStats
 import com.readyplayerai.gainsgoblin.model.Exercise
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -21,7 +23,8 @@ import kotlinx.coroutines.launch
 data class ExercisesUiState(
     val loaded: Boolean = false,
     val knownExercises: List<Exercise> = emptyList(),
-    val date: String? = null
+    val date: String? = null,
+    val stats: Map<String, ExerciseStats> = emptyMap()
 )
 
 /**
@@ -51,7 +54,8 @@ class ExercisesViewModel @Inject constructor(
     private fun mapAppState(state: AppState): ExercisesUiState = ExercisesUiState(
         loaded = state.loaded,
         knownExercises = state.knownExercises,
-        date = date
+        date = date,
+        stats = exerciseStats(state.workoutDays)
     )
 
     suspend fun editExercise(oldName: String, newName: String, newBodyPart: String?) {
@@ -64,4 +68,16 @@ class ExercisesViewModel @Inject constructor(
 
     suspend fun addExercise(name: String, category: String?): Boolean =
         repository.addExercise(name, category)
+
+    suspend fun setFavorite(name: String, favorite: Boolean) {
+        repository.setFavorite(name, favorite)
+    }
+
+    suspend fun restoreExercise(exercise: Exercise) {
+        val name = exercise.Name.orEmpty()
+        if (name.isBlank()) return
+        if (repository.addExercise(name, exercise.BodyPart)) {
+            if (exercise.favorite == true) repository.setFavorite(name, true)
+        }
+    }
 }
