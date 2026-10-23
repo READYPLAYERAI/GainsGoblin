@@ -52,8 +52,8 @@ import java.util.TimeZone
 
 /**
  * The Journal screen: one continuous vertical journal, newest-first, with today as item 0 and
- * the past flowing down. Each day is a sticky header followed by its exercise cards; today's
- * rest day renders a single compact rest card while past rest days render only their header.
+ * the past flowing down. Each day is a sticky header followed by its exercise cards; rest days
+ * render only their header.
  * A shared FlexibleHeaderBar collapses as the list scrolls and shows the active day's month.
  *
  * The theme is expected to be provided by the caller (integration functions
@@ -115,8 +115,7 @@ fun JournalScreen(
         uiState.realDays.associate { it.Date to findJournalPr(it.Exercises.orEmpty()) }
     }
     // Maps each day index to the index of its sticky header in the LazyColumn. A day adds one
-    // item for its header plus one body item only for today when it is a rest day; training
-    // days add one item per exercise.
+    // item for its header, plus one item per exercise on training days.
     val dayStartIndices = remember(uiState.infiniteDays, uiState.realDays) {
         val indices = IntArray(uiState.infiniteDays.size)
         var itemIndex = 0
@@ -124,9 +123,7 @@ fun JournalScreen(
             indices[index] = itemIndex
             itemIndex += 1 // sticky day header
             val realExercises = realDaysByDate[day.Date]?.Exercises
-            if (realExercises.isNullOrEmpty()) {
-                if (index == 0) itemIndex += 1 // today's compact rest card
-            } else {
+            if (!realExercises.isNullOrEmpty()) {
                 itemIndex += realExercises.size
             }
         }
@@ -200,13 +197,7 @@ fun JournalScreen(
                     )
                 }
 
-                if (exercises.isEmpty()) {
-                    if (index == 0) {
-                        item(key = "rest-$keyDate") {
-                            JournalRestDayCard(modifier = Modifier.padding(top = 8.dp))
-                        }
-                    }
-                } else {
+                if (exercises.isNotEmpty()) {
                     itemsIndexed(
                         items = exercises,
                         key = { exerciseIndex, exercise ->
