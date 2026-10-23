@@ -1,4 +1,4 @@
-package com.readyplayerai.gainsgoblin.ui.compose.home
+package com.readyplayerai.gainsgoblin.ui.compose.journal
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -15,18 +15,18 @@ import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.ui.compose.FlexibleHeaderBar
 
 /**
- * Home's header: the journal title with the active day's month as subtitle over the
+ * Journal's header: the journal title with the active day's month as subtitle over the
  * shared [FlexibleHeaderBar], plus the date-picker action.
  */
 @Composable
-fun HomeAppBar(
+fun JournalAppBar(
     monthLabel: String,
     collapseFraction: Float,
     onDateIconClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FlexibleHeaderBar(
-        title = stringResource(R.string.home_journal_title),
+        title = stringResource(R.string.journal_title),
         subtitle = monthLabel,
         collapseFraction = collapseFraction,
         modifier = modifier,
@@ -38,8 +38,8 @@ fun HomeAppBar(
                     .clip(CircleShape),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_home_pick_date),
-                    contentDescription = stringResource(R.string.home_pick_date),
+                    painter = painterResource(R.drawable.ic_journal_pick_date),
+                    contentDescription = stringResource(R.string.journal_pick_date),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }

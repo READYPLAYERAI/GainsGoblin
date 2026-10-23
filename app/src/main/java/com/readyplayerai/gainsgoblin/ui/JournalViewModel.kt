@@ -20,14 +20,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * UI state for the Home journal feed.
+ * UI state for the journal feed.
  *
  * [infiniteDays] is the fixed descending day window of empty days (the legacy
  * `infiniteWorkoutDays`), newest-first: `infiniteDays[0]` is today and
  * `infiniteDays.last()` is today minus five years. [realDays] are the
  * repository's PR-flagged days.
  */
-data class HomeUiState(
+data class JournalUiState(
     val loaded: Boolean = false,
     val infiniteDays: List<WorkoutDay> = emptyList(),
     val realDays: List<WorkoutDay> = emptyList(),
@@ -36,15 +36,15 @@ data class HomeUiState(
 )
 
 /**
- * Backs [MainActivity]'s Home journal feed.
+ * Backs [JournalActivity]'s journal feed.
  *
  * Owns the legacy "infinite" day window (built exactly once, like the legacy
  * `infiniteWorkoutDays` cache) as a descending, newest-first list
  * `[today .. today-5y]`, and maps [WorkoutRepository.appState] into a
- * [HomeUiState].
+ * [JournalUiState].
  */
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class JournalViewModel @Inject constructor(
     private val repository: WorkoutRepository
 ) : ViewModel() {
 
@@ -52,12 +52,12 @@ class MainViewModel @Inject constructor(
     private val infiniteDays: List<WorkoutDay> = buildInfiniteDaysWindow()
 
     private val _uiState = MutableStateFlow(
-        HomeUiState(
+        JournalUiState(
             infiniteDays = infiniteDays
         )
     )
 
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<JournalUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -66,9 +66,9 @@ class MainViewModel @Inject constructor(
     }
 
     /** Fresh, never-stale state straight from the repository (re-runs the state pipeline). */
-    suspend fun freshUiState(): HomeUiState = mapAppState(repository.currentAppState())
+    suspend fun freshUiState(): JournalUiState = mapAppState(repository.currentAppState())
 
-    private fun mapAppState(state: AppState): HomeUiState = HomeUiState(
+    private fun mapAppState(state: AppState): JournalUiState = JournalUiState(
         loaded = state.loaded,
         infiniteDays = infiniteDays,
         realDays = state.workoutDays,

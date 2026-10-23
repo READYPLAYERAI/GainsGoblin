@@ -11,7 +11,7 @@ import java.util.Date
  * Builds one empty [WorkoutDay] per calendar day from [startDate] until (but not
  * including) [endDate].
  *
- * Pure port of the 20-year loop in `MainActivity.initViewPager()`. The caller owns
+ * Pure port of the 20-year loop in `JournalActivity.initViewPager()`. The caller owns
  * the range choice; the legacy caller used now minus five years through now plus
  * five years. Neither input date is mutated. Dates are formatted as `yyyy-MM-dd`.
  */

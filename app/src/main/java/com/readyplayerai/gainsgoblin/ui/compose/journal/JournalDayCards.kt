@@ -1,4 +1,4 @@
-package com.readyplayerai.gainsgoblin.ui.compose.home
+package com.readyplayerai.gainsgoblin.ui.compose.journal
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Spring
@@ -48,38 +48,38 @@ import com.readyplayerai.gainsgoblin.model.WorkoutSet
 import com.readyplayerai.gainsgoblin.ui.compose.CategoryMarker
 import kotlin.math.roundToInt
 
-private val HOME_TNUM = TextStyle(fontFeatureSettings = "tnum")
+private val JOURNAL_TNUM = TextStyle(fontFeatureSettings = "tnum")
 
-private fun homeTnum(size: androidx.compose.ui.unit.TextUnit, weight: FontWeight? = null) =
+private fun journalTnum(size: androidx.compose.ui.unit.TextUnit, weight: FontWeight? = null) =
     if (weight == null) {
-        HOME_TNUM.copy(fontSize = size)
+        JOURNAL_TNUM.copy(fontSize = size)
     } else {
-        HOME_TNUM.copy(fontSize = size, fontWeight = weight)
+        JOURNAL_TNUM.copy(fontSize = size, fontWeight = weight)
     }
 
-internal data class HomePrCelebration(
+internal data class JournalPrCelebration(
     val exerciseName: String?,
     val isRepPr: Boolean,
     @param:StringRes val labelRes: Int,
 )
 
-internal fun findHomePr(exercises: List<WorkoutExercise>): HomePrCelebration? {
+internal fun findJournalPr(exercises: List<WorkoutExercise>): JournalPrCelebration? {
     exercises.firstOrNull { it.MaxRepsPR }?.let {
-        return HomePrCelebration(it.Exercise, isRepPr = true, labelRes = R.string.home_pr_rep)
+        return JournalPrCelebration(it.Exercise, isRepPr = true, labelRes = R.string.journal_pr_rep)
     }
     exercises.firstOrNull { it.MaxWeightPR }?.let {
-        return HomePrCelebration(it.Exercise, isRepPr = false, labelRes = R.string.home_pr_weight)
+        return JournalPrCelebration(it.Exercise, isRepPr = false, labelRes = R.string.journal_pr_weight)
     }
     return null
 }
 
 @Composable
-internal fun HomeExerciseCard(
+internal fun JournalExerciseCard(
     exercise: WorkoutExercise,
     day: WorkoutDay,
     categoryFor: (String?) -> String?,
     onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
-    pr: HomePrCelebration?,
+    pr: JournalPrCelebration?,
     modifier: Modifier = Modifier,
 ) {
     val category = categoryFor(exercise.Exercise)
@@ -178,7 +178,7 @@ private fun SetRow(
             ) {
                 Text(
                     text = set.weight?.toString() ?: "",
-                    style = homeTnum(
+                    style = journalTnum(
                         size = 23.sp,
                         weight = if (isPr) FontWeight(650) else FontWeight.Medium,
                     ),
@@ -200,7 +200,7 @@ private fun SetRow(
                     PrBadge(labelRes = prLabelRes)
                 } else {
                     Text(
-                        text = stringResource(R.string.home_set_label, index + 1),
+                        text = stringResource(R.string.journal_set_label, index + 1),
                         fontSize = 12.5.sp,
                         color = onSurfaceVariant,
                     )
@@ -214,7 +214,7 @@ private fun SetRow(
             ) {
                 Text(
                     text = set.reps?.roundToInt()?.toString() ?: "",
-                    style = homeTnum(size = 18.sp, weight = FontWeight(650)),
+                    style = journalTnum(size = 18.sp, weight = FontWeight(650)),
                     color = onSurface,
                 )
                 Spacer(Modifier.width(4.dp))
@@ -294,7 +294,7 @@ private fun PrBadge(@StringRes labelRes: Int) {
 }
 
 @Composable
-internal fun HomeRestDayCard(modifier: Modifier = Modifier) {
+internal fun JournalRestDayCard(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -321,14 +321,14 @@ internal fun HomeRestDayCard(modifier: Modifier = Modifier) {
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.home_rest_day),
+                text = stringResource(R.string.journal_rest_day),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = stringResource(R.string.home_rest_day_body),
+                text = stringResource(R.string.journal_rest_day_body),
                 fontSize = 12.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,

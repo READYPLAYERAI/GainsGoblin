@@ -18,7 +18,7 @@ import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.domain.categoryFor as exerciseCategoryFor
 import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
 import com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTheme
-import com.readyplayerai.gainsgoblin.ui.compose.home.HomeScreen
+import com.readyplayerai.gainsgoblin.ui.compose.journal.JournalScreen
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
 
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,22 +28,22 @@ import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class JournalActivity : AppCompatActivity() {
 
     companion object {
         const val READ_REQUEST_CODE: Int = 42
     }
 
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: JournalViewModel by viewModels()
 
-    // Incremented on bottom-nav HOME reselect; Home's feed collects it and scrolls to today.
-    private val homeScrollToTopTick = MutableStateFlow(0)
+    // Incremented on bottom-nav JOURNAL reselect; Journal's feed collects it and scrolls to today.
+    private val journalScrollToTopTick = MutableStateFlow(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        setupHome()
+        setupJournal()
         // Hacky way to have the same code run in onRestart() as well
         onCreateStuff()
     }
@@ -53,18 +53,18 @@ class MainActivity : AppCompatActivity() {
         initActivity()
 
         setupBottomNavBar(
-            currentTab = BottomNavTab.HOME,
-            onHomeTabReselect = { homeScrollToTopTick.value++ },
+            currentTab = BottomNavTab.JOURNAL,
+            onJournalTabReselect = { journalScrollToTopTick.value++ },
         )
     }
 
-    // The Compose home island: vertical journal feed + flexible app bar.
-    private fun setupHome() {
+    // The Compose journal island: vertical journal feed + flexible app bar.
+    private fun setupJournal() {
         val activity = this
-        findViewById<ComposeView>(R.id.home_view).setContent {
+        findViewById<ComposeView>(R.id.journal_view).setContent {
             GainsGoblinTheme {
                 val uiState by viewModel.uiState.collectAsState()
-                HomeScreen(
+                JournalScreen(
                     uiState = uiState,
                     categoryFor = { name -> exerciseCategoryFor(uiState.knownExercises, name) },
                     onExerciseClick = { exercise, date ->
@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
                     onSelectDate = { date ->
                         viewModel.selectDate(date)
                     },
-                    scrollToTopTick = homeScrollToTopTick,
+                    scrollToTopTick = journalScrollToTopTick,
                 )
             }
         }
@@ -96,12 +96,12 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(applicationContext, result.message, Toast.LENGTH_LONG).show()
                 }
             }
-            // No pager re-init: the Compose home collects the repository StateFlow.
+            // No pager re-init: the Compose journal collects the repository StateFlow.
         }
     }
 
     override fun onRestart() {
-        // Nothing to re-init: the Compose home is StateFlow-driven.
+        // Nothing to re-init: the Compose journal is StateFlow-driven.
         super.onRestart()
     }
 
@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         Toast.makeText(applicationContext, "Could not locate file " + uri.path, Toast.LENGTH_SHORT).show()
                     }
-                    // No pager re-init: the Compose home re-renders from the StateFlow.
+                    // No pager re-init: the Compose journal re-renders from the StateFlow.
                 }
             }
         }

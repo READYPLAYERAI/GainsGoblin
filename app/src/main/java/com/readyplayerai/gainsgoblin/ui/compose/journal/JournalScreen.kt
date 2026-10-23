@@ -1,4 +1,4 @@
-package com.readyplayerai.gainsgoblin.ui.compose.home
+package com.readyplayerai.gainsgoblin.ui.compose.journal
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
@@ -42,7 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.readyplayerai.gainsgoblin.R
-import com.readyplayerai.gainsgoblin.ui.HomeUiState
+import com.readyplayerai.gainsgoblin.ui.JournalUiState
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.ParseException
@@ -51,7 +51,7 @@ import java.util.Locale
 import java.util.TimeZone
 
 /**
- * The Home screen: one continuous vertical journal, newest-first, with today as item 0 and
+ * The Journal screen: one continuous vertical journal, newest-first, with today as item 0 and
  * the past flowing down. Each day is a sticky header followed by its exercise cards; today's
  * rest day renders a single compact rest card while past rest days render only their header.
  * A shared FlexibleHeaderBar collapses as the list scrolls and shows the active day's month.
@@ -65,8 +65,8 @@ import java.util.TimeZone
     ExperimentalFoundationApi::class,
 )
 @Composable
-fun HomeScreen(
-    uiState: HomeUiState,
+fun JournalScreen(
+    uiState: JournalUiState,
     categoryFor: (String?) -> String?,
     onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
     onSelectDate: (date: String) -> Unit,
@@ -85,7 +85,7 @@ fun HomeScreen(
                     LoadingIndicator(modifier = Modifier.size(48.dp))
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = stringResource(R.string.home_loading),
+                        text = stringResource(R.string.journal_loading),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -112,7 +112,7 @@ fun HomeScreen(
         uiState.realDays.associateBy { it.Date }
     }
     val prByDate = remember(uiState.realDays) {
-        uiState.realDays.associate { it.Date to findHomePr(it.Exercises.orEmpty()) }
+        uiState.realDays.associate { it.Date to findJournalPr(it.Exercises.orEmpty()) }
     }
     // Maps each day index to the index of its sticky header in the LazyColumn. A day adds one
     // item for its header plus one body item only for today when it is a rest day; training
@@ -155,7 +155,7 @@ fun HomeScreen(
     val activeDay = uiState.infiniteDays.getOrNull(activeDayIndex)
     val monthLabel = remember(activeDay?.Date) { formatMonthYear(activeDay?.Date) }
 
-    // Notify the host (MainActivity persists selectedDate) whenever the active day changes.
+    // Notify the host (JournalActivity persists selectedDate) whenever the active day changes.
     LaunchedEffect(activeDayIndex, uiState.infiniteDays) {
         activeDay?.Date?.let(onSelectDate)
     }
@@ -173,7 +173,7 @@ fun HomeScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            HomeAppBar(
+            JournalAppBar(
                 monthLabel = monthLabel,
                 collapseFraction = scrollBehavior.state.collapsedFraction,
                 onDateIconClick = { showDatePicker = true },
@@ -193,7 +193,7 @@ fun HomeScreen(
                 val keyDate = day.Date ?: index.toString()
 
                 stickyHeader(key = "day-header-$keyDate") {
-                    HomeDayHeader(
+                    JournalDayHeader(
                         day = day,
                         realDay = realDay,
                         isToday = index == 0,
@@ -203,7 +203,7 @@ fun HomeScreen(
                 if (exercises.isEmpty()) {
                     if (index == 0) {
                         item(key = "rest-$keyDate") {
-                            HomeRestDayCard(modifier = Modifier.padding(top = 8.dp))
+                            JournalRestDayCard(modifier = Modifier.padding(top = 8.dp))
                         }
                     }
                 } else {
@@ -213,7 +213,7 @@ fun HomeScreen(
                             "ex-$keyDate-$exerciseIndex-${exercise.Exercise}"
                         },
                     ) { exerciseIndex, exercise ->
-                        HomeExerciseCard(
+                        JournalExerciseCard(
                             exercise = exercise,
                             day = day,
                             categoryFor = categoryFor,
@@ -239,7 +239,7 @@ fun HomeScreen(
     }
 
     if (showDatePicker) {
-        HomeDatePickerDialog(
+        JournalDatePickerDialog(
             initialDateString = activeDay?.Date,
             // windowFirstDay/windowLastDay must be CHRONOLOGICAL (first <= last):
             // the feed is DESCENDING, so the oldest day is last(), today is first().
@@ -275,7 +275,7 @@ private fun utcMillisToDateString(millis: Long): String = utcDateFormatter.forma
  * restricted to the five-year past day window.
  */
 @Composable
-private fun HomeDatePickerDialog(
+private fun JournalDatePickerDialog(
     initialDateString: String?,
     windowFirstDay: String?,
     windowLastDay: String?,
@@ -327,7 +327,7 @@ private fun HomeDatePickerDialog(
                         ?: onDismiss()
                 },
             ) {
-                Text(stringResource(R.string.home_date_picker_ok))
+                Text(stringResource(R.string.journal_date_picker_ok))
             }
         },
         dismissButton = {

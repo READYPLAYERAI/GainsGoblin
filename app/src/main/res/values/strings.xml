@@ -36,7 +36,7 @@
     </plurals>
 
     <string name="nav_exercises">Exercises</string>
-    <string name="nav_home">Home</string>
+    <string name="nav_journal">Journal</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_progress">Progress</string>
     <string name="progress_title">Progress</string>
@@ -129,22 +129,22 @@
     <string name="exercises_save">Save</string>
     <string name="exercises_name_invalid">Please choose an appropriate name</string>
 
-    <string name="home_rest_day">Rest day</string>
-    <string name="home_rest_day_hint">Nothing logged for %1$s. Recovery is where the growth happens.</string>
-    <string name="home_set_label">Set %1$d</string>
-    <string name="home_pr_rep">REP PR</string>
-    <string name="home_pr_weight">WT PR</string>
-    <string name="home_pick_date">Pick a date</string>
-    <string name="home_date_picker_ok">OK</string>
-    <string name="home_prev_month">Previous month</string>
-    <string name="home_next_month">Next month</string>
-    <string name="home_journal_title">Journal</string>
-    <string name="home_today_pill">TODAY</string>
-    <string name="home_day_summary">%1$d exercises · %2$d sets · %3$s kg</string>
-    <string name="home_rest_day_summary">Rest day — nothing logged</string>
-    <string name="home_rest_day_body">Nothing logged. Recovery is where the growth happens.</string>
-    <string name="home_day_pr_flag">PR</string>
-    <string name="home_loading">Loading your journal…</string>
+    <string name="journal_rest_day">Rest day</string>
+    <string name="journal_rest_day_hint">Nothing logged for %1$s. Recovery is where the growth happens.</string>
+    <string name="journal_set_label">Set %1$d</string>
+    <string name="journal_pr_rep">REP PR</string>
+    <string name="journal_pr_weight">WT PR</string>
+    <string name="journal_pick_date">Pick a date</string>
+    <string name="journal_date_picker_ok">OK</string>
+    <string name="journal_prev_month">Previous month</string>
+    <string name="journal_next_month">Next month</string>
+    <string name="journal_title">Journal</string>
+    <string name="journal_today_pill">TODAY</string>
+    <string name="journal_day_summary">%1$d exercises · %2$d sets · %3$s kg</string>
+    <string name="journal_rest_day_summary">Rest day — nothing logged</string>
+    <string name="journal_rest_day_body">Nothing logged. Recovery is where the growth happens.</string>
+    <string name="journal_day_pr_flag">PR</string>
+    <string name="journal_loading">Loading your journal…</string>
 
     <string name="settings_subtitle">Backup, data &amp; about</string>
     <string name="settings_section_backup">Backup &amp; restore</string>

@@ -1,4 +1,4 @@
-package com.readyplayerai.gainsgoblin.ui.compose.home
+package com.readyplayerai.gainsgoblin.ui.compose.journal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,12 +36,12 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * Sticky day header for Home's vertical journal: date tile, day title, optional
+ * Sticky day header for Journal's vertical journal: date tile, day title, optional
  * Today pill and a one-line summary. Opaque background so it reads cleanly while
  * pinned during scroll.
  */
 @Composable
-internal fun HomeDayHeader(
+internal fun JournalDayHeader(
     day: WorkoutDay,
     realDay: WorkoutDay?,
     isToday: Boolean,
@@ -176,7 +176,7 @@ private fun TodayPill() {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = stringResource(R.string.home_today_pill),
+            text = stringResource(R.string.journal_today_pill),
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.09.em,
@@ -188,21 +188,21 @@ private fun TodayPill() {
 @Composable
 private fun headerSummary(realDay: WorkoutDay?): String {
     if (realDay?.Exercises.isNullOrEmpty()) {
-        return stringResource(R.string.home_rest_day_summary)
+        return stringResource(R.string.journal_rest_day_summary)
     }
     val exercises = realDay?.Exercises.orEmpty()
     val setCount = exercises.sumOf { it.Sets?.size ?: 0 }
     val volume = realDay?.DayVolume ?: 0.0
     val volumeText = NumberFormat.getIntegerInstance(Locale.getDefault()).format(volume.roundToInt())
     val base = stringResource(
-        R.string.home_day_summary,
+        R.string.journal_day_summary,
         exercises.size,
         setCount,
         volumeText,
     )
-    val pr = findHomePr(exercises)
+    val pr = findJournalPr(exercises)
     return if (pr != null) {
-        base + " · ★ " + stringResource(R.string.home_day_pr_flag)
+        base + " · ★ " + stringResource(R.string.journal_day_pr_flag)
     } else {
         base
     }

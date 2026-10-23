@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 
 /**
- * Flexible collapsing header shared by the Home and Exercises screens,
+ * Flexible collapsing header shared by the Journal and Exercises screens,
  * following the M3 Expressive large flexible top app bar anatomy: 152dp
  * expanded (title block bottom-anchored with 28dp bottom padding) -> 64dp
  * collapsed (title centered, 12dp bottom padding) as [collapseFraction] grows.

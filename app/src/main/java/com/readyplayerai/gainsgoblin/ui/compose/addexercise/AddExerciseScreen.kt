@@ -528,7 +528,7 @@ private fun SheetActionRow(
     }
 }
 
-/** Formats a "yyyy-MM-dd" date as a full date like Home's header subtitle. */
+/** Formats a "yyyy-MM-dd" date as a full date like Journal's header subtitle. */
 private fun formatFullDate(date: String): String = try {
     val parsed = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)
     if (parsed != null) SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(parsed) else date

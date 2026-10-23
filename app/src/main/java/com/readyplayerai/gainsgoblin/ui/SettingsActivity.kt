@@ -35,13 +35,13 @@ class SettingsActivity : AppCompatActivity() {
                 SettingsScreen(
                     onImportConfirm = {
                         startActivity(
-                            Intent(activity, MainActivity::class.java)
+                            Intent(activity, JournalActivity::class.java)
                                 .putExtra("doit", "importcsv"),
                         )
                     },
                     onExportClick = {
                         startActivity(
-                            Intent(activity, MainActivity::class.java)
+                            Intent(activity, JournalActivity::class.java)
                                 .putExtra("doit", "exportcsv"),
                         )
                     },
@@ -53,7 +53,7 @@ class SettingsActivity : AppCompatActivity() {
                                 R.string.settings_data_deleted,
                                 Toast.LENGTH_SHORT,
                             ).show()
-                            startActivity(Intent(activity, MainActivity::class.java))
+                            startActivity(Intent(activity, JournalActivity::class.java))
                         }
                     },
                     onSourceCodeClick = {
