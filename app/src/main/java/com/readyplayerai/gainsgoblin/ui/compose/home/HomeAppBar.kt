@@ -15,26 +15,27 @@ import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.ui.compose.FlexibleHeaderBar
 
 /**
- * Home's header: day-of-week title + full date over the shared [FlexibleHeaderBar];
- * delegates all layout/animation.
+ * Home's header: the journal title with the active day's month as subtitle over the
+ * shared [FlexibleHeaderBar], plus the date-picker action.
  */
 @Composable
 fun HomeAppBar(
-    weekdayTitle: String,
-    fullDate: String,
+    monthLabel: String,
     collapseFraction: Float,
-    onDateIconClick: () -> Unit = {},
+    onDateIconClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FlexibleHeaderBar(
-        title = weekdayTitle,
-        subtitle = fullDate,
+        title = stringResource(R.string.home_journal_title),
+        subtitle = monthLabel,
         collapseFraction = collapseFraction,
         modifier = modifier,
         actions = {
             IconButton(
                 onClick = onDateIconClick,
-                modifier = Modifier.size(44.dp).clip(CircleShape),
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_home_pick_date),

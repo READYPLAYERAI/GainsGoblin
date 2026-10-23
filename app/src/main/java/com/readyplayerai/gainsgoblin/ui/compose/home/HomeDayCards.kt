@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -38,7 +37,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -48,65 +46,45 @@ import com.readyplayerai.gainsgoblin.model.WorkoutDay
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
 import com.readyplayerai.gainsgoblin.model.WorkoutSet
 import com.readyplayerai.gainsgoblin.ui.compose.CategoryMarker
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
 import kotlin.math.roundToInt
 
-private val TNUM = TextStyle(fontFeatureSettings = "tnum")
+private val HOME_TNUM = TextStyle(fontFeatureSettings = "tnum")
 
-private fun tnum(size: androidx.compose.ui.unit.TextUnit, weight: FontWeight? = null) =
-    if (weight == null) TNUM.copy(fontSize = size) else TNUM.copy(fontSize = size, fontWeight = weight)
+private fun homeTnum(size: androidx.compose.ui.unit.TextUnit, weight: FontWeight? = null) =
+    if (weight == null) {
+        HOME_TNUM.copy(fontSize = size)
+    } else {
+        HOME_TNUM.copy(fontSize = size, fontWeight = weight)
+    }
 
-private data class DayPrCelebration(
+internal data class HomePrCelebration(
     val exerciseName: String?,
     val isRepPr: Boolean,
     @param:StringRes val labelRes: Int,
 )
 
-/**
- * One section of Home's vertical journal feed: renders exactly what the
- * old pager page rendered — exercise cards for a training day, or the big
- * rest-day empty state for an empty day. The day header lives in the flexible app bar.
- */
-@Composable
-fun HomeDaySection(
-    day: WorkoutDay,
-    realDay: WorkoutDay?,
-    categoryFor: (String?) -> String?,
-    onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val exercises = realDay?.Exercises
-    Column(modifier = modifier) {
-        if (!exercises.isNullOrEmpty()) {
-            val pr = remember(exercises) { findPr(exercises) }
-            exercises.forEach { exercise ->
-                ExerciseCard(
-                    exercise = exercise,
-                    day = day,
-                    categoryFor = categoryFor,
-                    onExerciseClick = onExerciseClick,
-                    pr = pr,
-                )
-            }
-        } else {
-            RestDayEmptyState(day = day)
-        }
+internal fun findHomePr(exercises: List<WorkoutExercise>): HomePrCelebration? {
+    exercises.firstOrNull { it.MaxRepsPR }?.let {
+        return HomePrCelebration(it.Exercise, isRepPr = true, labelRes = R.string.home_pr_rep)
     }
+    exercises.firstOrNull { it.MaxWeightPR }?.let {
+        return HomePrCelebration(it.Exercise, isRepPr = false, labelRes = R.string.home_pr_weight)
+    }
+    return null
 }
 
 @Composable
-private fun ExerciseCard(
+internal fun HomeExerciseCard(
     exercise: WorkoutExercise,
     day: WorkoutDay,
     categoryFor: (String?) -> String?,
     onExerciseClick: (exerciseName: String?, date: String?) -> Unit,
-    pr: DayPrCelebration?,
+    pr: HomePrCelebration?,
+    modifier: Modifier = Modifier,
 ) {
     val category = categoryFor(exercise.Exercise)
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, bottom = 14.dp)
             .clip(RoundedCornerShape(28.dp))
@@ -121,7 +99,9 @@ private fun ExerciseCard(
             sets.indexOfFirst { set ->
                 if (pr.isRepPr) set.reps == exercise.MaxReps else set.weight == exercise.MaxWeight
             }
-        } else -1
+        } else {
+            -1
+        }
         val sets = exercise.Sets ?: emptyList()
         sets.forEachIndexed { index, set ->
             SetRow(
@@ -198,7 +178,7 @@ private fun SetRow(
             ) {
                 Text(
                     text = set.weight?.toString() ?: "",
-                    style = tnum(
+                    style = homeTnum(
                         size = 23.sp,
                         weight = if (isPr) FontWeight(650) else FontWeight.Medium,
                     ),
@@ -234,7 +214,7 @@ private fun SetRow(
             ) {
                 Text(
                     text = set.reps?.roundToInt()?.toString() ?: "",
-                    style = tnum(size = 18.sp, weight = FontWeight(650)),
+                    style = homeTnum(size = 18.sp, weight = FontWeight(650)),
                     color = onSurface,
                 )
                 Spacer(Modifier.width(4.dp))
@@ -314,70 +294,46 @@ private fun PrBadge(@StringRes labelRes: Int) {
 }
 
 @Composable
-private fun RestDayEmptyState(day: WorkoutDay) {
-    val weekday = remember(day.Date) { weekdayOf(day.Date) }
-
-    Box(
-        modifier = Modifier
+internal fun HomeRestDayCard(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.TopCenter,
+            .padding(start = 16.dp, end = 16.dp, bottom = 14.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 26.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .padding(horizontal = 26.dp, vertical = 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.tertiaryContainer),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(88.dp)
-                    .clip(RoundedCornerShape(44.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_fitness_center_24px),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(40.dp),
-                )
-            }
-            Spacer(Modifier.height(18.dp))
+            Icon(
+                painter = painterResource(R.drawable.ic_fitness_center_24px),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(23.dp),
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.home_rest_day),
-                fontSize = 20.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
-                text = stringResource(R.string.home_rest_day_hint, weekday),
-                fontSize = 13.5.sp,
+                text = stringResource(R.string.home_rest_day_body),
+                fontSize = 12.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.widthIn(max = 250.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
-}
-
-private fun findPr(exercises: List<WorkoutExercise>): DayPrCelebration? {
-    exercises.firstOrNull { it.MaxRepsPR }?.let {
-        return DayPrCelebration(it.Exercise, isRepPr = true, labelRes = R.string.home_pr_rep)
-    }
-    exercises.firstOrNull { it.MaxWeightPR }?.let {
-        return DayPrCelebration(it.Exercise, isRepPr = false, labelRes = R.string.home_pr_weight)
-    }
-    return null
-}
-
-private fun weekdayOf(date: String?): String = try {
-    val parsed = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date ?: "")
-    if (parsed != null) SimpleDateFormat("EEEE", Locale.getDefault()).format(parsed) else ""
-} catch (e: ParseException) {
-    ""
 }

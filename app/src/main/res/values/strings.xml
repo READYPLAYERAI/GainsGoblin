@@ -138,6 +138,13 @@
     <string name="home_date_picker_ok">OK</string>
     <string name="home_prev_month">Previous month</string>
     <string name="home_next_month">Next month</string>
+    <string name="home_journal_title">Journal</string>
+    <string name="home_today_pill">TODAY</string>
+    <string name="home_day_summary">%1$d exercises · %2$d sets · %3$s kg</string>
+    <string name="home_rest_day_summary">Rest day — nothing logged</string>
+    <string name="home_rest_day_body">Nothing logged. Recovery is where the growth happens.</string>
+    <string name="home_day_pr_flag">PR</string>
+    <string name="home_loading">Loading your journal…</string>
 
     <string name="settings_subtitle">Backup, data &amp; about</string>
     <string name="settings_section_backup">Backup &amp; restore</string>
