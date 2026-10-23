@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.cos
@@ -40,7 +41,11 @@ data class PieSliceData(val label: String, val value: Float, val color: Color)
  * with a small gap between slices and the value printed inside larger slices.
  */
 @Composable
-fun PieChart(slices: List<PieSliceData>, modifier: Modifier = Modifier) {
+fun PieChart(
+    slices: List<PieSliceData>,
+    modifier: Modifier = Modifier,
+    chartHeight: Dp = 220.dp,
+) {
     val reveal = remember(slices) { Animatable(0f) }
     LaunchedEffect(slices) {
         reveal.animateTo(
@@ -52,7 +57,7 @@ fun PieChart(slices: List<PieSliceData>, modifier: Modifier = Modifier) {
         )
     }
 
-    Box(modifier.fillMaxWidth().height(220.dp)) {
+    Box(modifier.fillMaxWidth().height(chartHeight)) {
         Canvas(Modifier.fillMaxSize()) {
             if (slices.isEmpty()) return@Canvas
 

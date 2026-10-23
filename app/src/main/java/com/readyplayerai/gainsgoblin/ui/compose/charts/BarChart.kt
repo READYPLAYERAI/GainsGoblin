@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,7 +31,11 @@ data class BarEntryData(val label: String, val value: Float)
  * and a centered label under each bar.
  */
 @Composable
-fun BarChart(entries: List<BarEntryData>, modifier: Modifier = Modifier) {
+fun BarChart(
+    entries: List<BarEntryData>,
+    modifier: Modifier = Modifier,
+    averageValue: Float? = null,
+) {
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val barColor = MaterialTheme.colorScheme.primary
@@ -87,6 +92,19 @@ fun BarChart(entries: List<BarEntryData>, modifier: Modifier = Modifier) {
                     plotLeft - 6.dp.toPx(),
                     y,
                     yLabelPaint,
+                )
+            }
+        }
+
+        averageValue?.let { average ->
+            if (average > 0f) {
+                val averageY = plotBottom - plotH * (average / maxValue)
+                drawLine(
+                    color = labelColor.copy(alpha = 0.55f),
+                    start = Offset(plotLeft, averageY),
+                    end = Offset(plotRight, averageY),
+                    strokeWidth = 1.2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 5.dp.toPx())),
                 )
             }
         }

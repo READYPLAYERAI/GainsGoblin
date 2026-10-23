@@ -17,8 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.readyplayerai.gainsgoblin.R
 
-/** The five top-level screens, in bottom bar display order. */
-enum class BottomNavTab { DIARY, EXERCISES, HOME, CHARTS, SETTINGS }
+/** The four top-level screens, in bottom bar display order. */
+enum class BottomNavTab { HOME, EXERCISES, PROGRESS, SETTINGS }
 
 private data class BottomNavItem(
     val tab: BottomNavTab,
@@ -27,10 +27,9 @@ private data class BottomNavItem(
 )
 
 private val bottomNavItems = listOf(
-    BottomNavItem(BottomNavTab.DIARY, R.string.nav_diary, R.drawable.ic_nav_diary),
-    BottomNavItem(BottomNavTab.EXERCISES, R.string.nav_exercises, R.drawable.ic_nav_exercises),
     BottomNavItem(BottomNavTab.HOME, R.string.nav_home, R.drawable.ic_nav_home),
-    BottomNavItem(BottomNavTab.CHARTS, R.string.nav_charts, R.drawable.ic_nav_charts),
+    BottomNavItem(BottomNavTab.EXERCISES, R.string.nav_exercises, R.drawable.ic_nav_exercises),
+    BottomNavItem(BottomNavTab.PROGRESS, R.string.nav_progress, R.drawable.ic_nav_charts),
     BottomNavItem(BottomNavTab.SETTINGS, R.string.nav_settings, R.drawable.ic_nav_settings),
 )
 

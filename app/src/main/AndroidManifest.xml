@@ -16,8 +16,8 @@
         >
 
         <activity
-            android:name=".ui.ChartsActivity"
-            android:label="Charts"
+            android:name=".ui.ProgressActivity"
+            android:label="@string/nav_progress"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.CustomExerciseActivity"
@@ -27,10 +27,6 @@
             android:label="Exercises"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".ui.DayActivity"
-            android:parentActivityName=".ui.DiaryActivity"
-            android:label="Day" />
-        <activity
             android:name=".ui.SettingsActivity"
             android:label="Settings"
             android:theme="@style/AppTheme.NoActionBar" />
@@ -38,16 +34,8 @@
             android:name=".ui.CalculatorActivity"
             android:label="Plate Calculator" />
         <activity
-            android:name=".ui.PersonalRecordsActivity"
-            android:label="Personal Records"
-            android:parentActivityName=".ui.ChartsActivity" />
-        <activity
             android:name=".ui.AddExerciseActivity"
             android:label="Add Exercise"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".ui.DiaryActivity"
-            android:label="Diary"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.MainActivity"

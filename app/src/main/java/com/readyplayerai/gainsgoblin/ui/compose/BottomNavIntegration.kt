@@ -4,10 +4,9 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.ComposeView
 import com.readyplayerai.gainsgoblin.R
-import com.readyplayerai.gainsgoblin.ui.ChartsActivity
-import com.readyplayerai.gainsgoblin.ui.DiaryActivity
 import com.readyplayerai.gainsgoblin.ui.ExercisesActivity
 import com.readyplayerai.gainsgoblin.ui.MainActivity
+import com.readyplayerai.gainsgoblin.ui.ProgressActivity
 import com.readyplayerai.gainsgoblin.ui.SettingsActivity
 
 /**
@@ -17,12 +16,9 @@ import com.readyplayerai.gainsgoblin.ui.SettingsActivity
  *
  * Tapping the already-selected tab is a no-op, except for HOME where
  * [onHomeTabReselect] is invoked so the host can scroll the feed back to today.
- * [diaryDateProvider] is only read at click time and its result is passed to
- * DiaryActivity as the "date" intent extra (used when navigating from Home).
  */
 fun AppCompatActivity.setupBottomNavBar(
     currentTab: BottomNavTab,
-    diaryDateProvider: () -> String? = { null },
     onHomeTabReselect: () -> Unit = {},
 ) {
     val activity = this
@@ -30,7 +26,7 @@ fun AppCompatActivity.setupBottomNavBar(
         GainsGoblinTheme {
             GainsGoblinBottomBar(selectedTab = currentTab) { tab ->
                 if (tab != currentTab) {
-                    activity.navigateToTab(tab, diaryDateProvider())
+                    activity.navigateToTab(tab)
                 } else if (tab == BottomNavTab.HOME) {
                     onHomeTabReselect()
                 }
@@ -39,16 +35,12 @@ fun AppCompatActivity.setupBottomNavBar(
     }
 }
 
-private fun AppCompatActivity.navigateToTab(tab: BottomNavTab, diaryDate: String?) {
+private fun AppCompatActivity.navigateToTab(tab: BottomNavTab) {
     val intent = when (tab) {
-        BottomNavTab.DIARY -> Intent(this, DiaryActivity::class.java)
-        BottomNavTab.EXERCISES -> Intent(this, ExercisesActivity::class.java)
         BottomNavTab.HOME -> Intent(this, MainActivity::class.java)
-        BottomNavTab.CHARTS -> Intent(this, ChartsActivity::class.java)
+        BottomNavTab.EXERCISES -> Intent(this, ExercisesActivity::class.java)
+        BottomNavTab.PROGRESS -> Intent(this, ProgressActivity::class.java)
         BottomNavTab.SETTINGS -> Intent(this, SettingsActivity::class.java)
-    }
-    if (tab == BottomNavTab.DIARY && diaryDate != null) {
-        intent.putExtra("date", diaryDate)
     }
     startActivity(intent)
     overridePendingTransition(0, 0)

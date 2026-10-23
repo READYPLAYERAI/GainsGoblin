@@ -22,9 +22,6 @@ import com.readyplayerai.gainsgoblin.ui.compose.home.HomeScreen
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
 
 import dagger.hilt.android.AndroidEntryPoint
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-import java.util.Date
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -36,9 +33,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val READ_REQUEST_CODE: Int = 42
     }
-
-    // Selected `yyyy-MM-dd` date; defaulted to today in [onCreateStuff].
-    private var dateSelected: String? = null
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -60,13 +54,8 @@ class MainActivity : AppCompatActivity() {
 
         setupBottomNavBar(
             currentTab = BottomNavTab.HOME,
-            diaryDateProvider = { dateSelected },
             onHomeTabReselect = { homeScrollToTopTick.value++ },
         )
-
-        // Date selected is by default today
-        val dateFormat: DateFormat = SimpleDateFormat("yyyy-MM-dd")
-        dateSelected = dateFormat.format(Date())
     }
 
     // The Compose home island: vertical journal feed + flexible app bar.
@@ -81,12 +70,10 @@ class MainActivity : AppCompatActivity() {
                     onExerciseClick = { exercise, date ->
                         val intent = Intent(activity, AddExerciseActivity::class.java)
                         intent.putExtra("exercise", exercise)
-                        dateSelected = date
                         date?.let { viewModel.selectDate(it) }
                         activity.startActivity(intent)
                     },
                     onSelectDate = { date ->
-                        dateSelected = date
                         viewModel.selectDate(date)
                     },
                     scrollToTopTick = homeScrollToTopTick,

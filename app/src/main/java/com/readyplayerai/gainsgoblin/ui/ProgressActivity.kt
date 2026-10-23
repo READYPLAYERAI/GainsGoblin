@@ -1,6 +1,5 @@
 package com.readyplayerai.gainsgoblin.ui
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -11,29 +10,27 @@ import androidx.compose.ui.platform.ComposeView
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.ui.compose.BottomNavTab
 import com.readyplayerai.gainsgoblin.ui.compose.GainsGoblinTheme
-import com.readyplayerai.gainsgoblin.ui.compose.charts.ChartsScreen
+import com.readyplayerai.gainsgoblin.ui.compose.progress.ProgressScreen
 import com.readyplayerai.gainsgoblin.ui.compose.setupBottomNavBar
 import dagger.hilt.android.AndroidEntryPoint
 
+/** Hosts the Progress screen. */
 @AndroidEntryPoint
-class ChartsActivity : AppCompatActivity() {
+class ProgressActivity : AppCompatActivity() {
 
-    private val viewModel: ChartsViewModel by viewModels()
+    private val viewModel: ProgressViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_charts)
+        setContentView(R.layout.activity_progress)
 
-        setupBottomNavBar(BottomNavTab.CHARTS)
+        setupBottomNavBar(BottomNavTab.PROGRESS)
 
-        val activity = this
-        findViewById<ComposeView>(R.id.charts_view).setContent {
+        findViewById<ComposeView>(R.id.progress_view).setContent {
             GainsGoblinTheme {
                 val state by viewModel.uiState.collectAsState()
-                ChartsScreen(uiState = state) {
-                    startActivity(Intent(activity, PersonalRecordsActivity::class.java))
-                }
+                ProgressScreen(uiState = state)
             }
         }
     }
