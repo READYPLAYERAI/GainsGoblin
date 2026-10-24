@@ -7,10 +7,11 @@ const val JOURNAL_ROUTE = "journal"
 const val EXERCISES_ROUTE = "exercises"
 const val PROGRESS_ROUTE = "progress"
 const val SETTINGS_ROUTE = "settings"
-const val ADD_EXERCISE_ROUTE = "add_exercise?exercise={exercise}"
+const val EXERCISE_PROGRESS_ROUTE = "exercise_progress?exercise={exercise}"
 
-/** Builds the AddExercise route with the exercise name URL-encoded. */
-fun addExerciseRoute(name: String): String = "add_exercise?exercise=${Uri.encode(name)}"
+/** Builds the ExerciseProgress route with the exercise name URL-encoded. */
+fun exerciseProgressRoute(name: String): String =
+    "exercise_progress?exercise=${Uri.encode(name)}"
 
 /** Maps a bottom-bar tab to its NavHost route. */
 fun routeFor(tab: BottomNavTab): String = when (tab) {
@@ -26,5 +27,6 @@ fun tabForRoute(route: String?): BottomNavTab? = when (route) {
     EXERCISES_ROUTE -> BottomNavTab.EXERCISES
     PROGRESS_ROUTE -> BottomNavTab.PROGRESS
     SETTINGS_ROUTE -> BottomNavTab.SETTINGS
+    EXERCISE_PROGRESS_ROUTE -> BottomNavTab.EXERCISES
     else -> null
 }

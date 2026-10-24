@@ -42,6 +42,7 @@ fun ConsistencyHeatmap(
     cells: List<ConsistencyCell>,
     weeks: Int,
     today: String,
+    oldestLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val surface = MaterialTheme.colorScheme.surfaceContainer
@@ -102,7 +103,7 @@ fun ConsistencyHeatmap(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.insights_legend_oldest),
+                text = oldestLabel ?: stringResource(R.string.insights_legend_oldest),
                 fontSize = 11.5.sp,
                 color = onSurfaceVariant,
             )

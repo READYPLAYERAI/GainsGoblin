@@ -72,6 +72,9 @@ import com.readyplayerai.gainsgoblin.ui.ExercisesUiState
 import com.readyplayerai.gainsgoblin.ui.compose.CategoryIcon
 import com.readyplayerai.gainsgoblin.ui.compose.CategoryMarker
 import com.readyplayerai.gainsgoblin.ui.compose.FlexibleHeaderBar
+import com.readyplayerai.gainsgoblin.ui.compose.journal.LogSetSheet
+import com.readyplayerai.gainsgoblin.ui.compose.journal.lastPerformed
+import com.readyplayerai.gainsgoblin.ui.compose.progress.dayWithYear
 import kotlinx.coroutines.launch
 
 /**
@@ -88,6 +91,7 @@ import kotlinx.coroutines.launch
 fun ExercisesScreen(
     uiState: ExercisesUiState,
     onExerciseClick: (String) -> Unit,
+    onLogSet: (exerciseName: String, weight: Double, reps: Double) -> Unit,
     onAddExercise: (name: String, category: String, onResult: (Boolean) -> Unit) -> Unit,
     onToggleFavorite: (name: String, favorite: Boolean) -> Unit,
     onEditExercise: (oldName: String, newName: String, newCategory: String?) -> Unit,
@@ -116,6 +120,7 @@ fun ExercisesScreen(
     var sheetExerciseName by remember { mutableStateOf<String?>(null) }
     var showSortSheet by remember { mutableStateOf(false) }
     var showAddSheet by remember { mutableStateOf(false) }
+    var loggingExercise by remember { mutableStateOf<Exercise?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val context = LocalContext.current
@@ -519,7 +524,7 @@ fun ExercisesScreen(
         ExerciseActionSheet(
             exercise = exercise,
             onLogSets = {
-                onExerciseClick(exercise.Name.orEmpty())
+                loggingExercise = exercise
                 sheetExerciseName = null
             },
             onToggleFavorite = { favorite ->
@@ -559,6 +564,23 @@ fun ExercisesScreen(
                     }
                 }
             },
+        )
+    }
+
+    loggingExercise?.let { exercise ->
+        val name = exercise.Name.orEmpty()
+        val last = lastPerformed(uiState.days, name)
+        LogSetSheet(
+            exerciseName = name,
+            dateLabel = dayWithYear(uiState.selectedDate),
+            initialWeight = last?.set?.weight,
+            initialReps = last?.set?.reps,
+            editingSetIndex = null,
+            onSave = { weight, reps ->
+                onLogSet(name, weight, reps)
+                loggingExercise = null
+            },
+            onDismiss = { loggingExercise = null },
         )
     }
 }

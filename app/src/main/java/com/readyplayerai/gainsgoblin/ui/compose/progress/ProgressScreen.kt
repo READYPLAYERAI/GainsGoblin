@@ -75,8 +75,8 @@ import com.readyplayerai.gainsgoblin.ui.compose.FlexibleHeaderBar
 @Composable
 fun ProgressScreen(
     uiState: ProgressUiState,
+    onOpenExercise: (String) -> Unit,
 ) {
-    // Wired to the record sheet in a later step.
     if (!uiState.loaded) {
         Surface(
             color = MaterialTheme.colorScheme.surface,
@@ -98,7 +98,6 @@ fun ProgressScreen(
     var searchOpen by remember { mutableStateOf(false) }
     var category by remember { mutableStateOf<String?>(null) }
     var favouritesOnly by remember { mutableStateOf(false) }
-    var openRecordName by remember { mutableStateOf<String?>(null) }
     val categories = stringArrayResource(R.array.Categories).toList()
 
     val records = remember(uiState.days, uiState.knownExercises) {
@@ -230,7 +229,7 @@ fun ProgressScreen(
                     query = query,
                     category = category,
                     overloads = overloads,
-                    onExerciseClick = { name, _ -> openRecordName = name },
+                    onExerciseClick = { name, _ -> onOpenExercise(name) },
                 )
                 ProgressLens.RECORDS -> item(key = "records") {
                     RecordsLens(
@@ -238,7 +237,7 @@ fun ProgressScreen(
                         query = query,
                         category = category,
                         favouritesOnly = favouritesOnly,
-                        onOpenRecord = { openRecordName = it },
+                        onOpenRecord = onOpenExercise,
                     )
                 }
                 ProgressLens.INSIGHTS -> item(key = "insights") {
@@ -248,10 +247,6 @@ fun ProgressScreen(
         }
     }
 
-    val openRecord = openRecordName?.let { name -> records.firstOrNull { it.name == name } }
-    if (openRecord != null) {
-        RecordSheet(record = openRecord, onDismiss = { openRecordName = null })
-    }
 }
 
 /**

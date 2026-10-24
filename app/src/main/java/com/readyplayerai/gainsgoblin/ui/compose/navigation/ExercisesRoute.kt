@@ -19,6 +19,9 @@ fun ExercisesRoute(onExerciseClick: (String) -> Unit) {
     ExercisesScreen(
         uiState = state,
         onExerciseClick = onExerciseClick,
+        onLogSet = { name, weight, reps ->
+            scope.launch { viewModel.addSet(name, weight, reps) }
+        },
         onAddExercise = { name, category, onResult ->
             scope.launch { onResult(viewModel.addExercise(name, category)) }
         },

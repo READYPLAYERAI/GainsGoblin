@@ -67,10 +67,16 @@ fun GainsGoblinApp() {
             composable(JOURNAL_ROUTE) { JournalRoute(scrollToTopTick = journalScrollToTopTick) }
             composable(EXERCISES_ROUTE) {
                 ExercisesRoute(
-                    onExerciseClick = { name -> navController.navigate(addExerciseRoute(name)) },
+                    onExerciseClick = { name ->
+                        navController.navigate(exerciseProgressRoute(name))
+                    },
                 )
             }
-            composable(PROGRESS_ROUTE) { ProgressRoute() }
+            composable(PROGRESS_ROUTE) {
+                ProgressRoute(
+                    onOpenExercise = { name -> navController.navigate(exerciseProgressRoute(name)) },
+                )
+            }
             composable(SETTINGS_ROUTE) {
                 SettingsRoute(
                     onDataDeleted = {
@@ -83,7 +89,7 @@ fun GainsGoblinApp() {
                 )
             }
             composable(
-                route = ADD_EXERCISE_ROUTE,
+                route = EXERCISE_PROGRESS_ROUTE,
                 arguments = listOf(
                     navArgument("exercise") {
                         type = NavType.StringType
@@ -92,7 +98,16 @@ fun GainsGoblinApp() {
                     },
                 ),
             ) {
-                AddExerciseRoute()
+                ExerciseProgressRoute(
+                    onBack = { navController.popBackStack() },
+                    onOpenExercise = { newName ->
+                        navController.navigate(exerciseProgressRoute(newName)) {
+                            popUpTo(EXERCISE_PROGRESS_ROUTE) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onDeleted = { navController.popBackStack() },
+                )
             }
         }
     }

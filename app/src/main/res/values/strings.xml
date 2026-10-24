@@ -110,7 +110,7 @@
     <string name="exercises_name_invalid">Please choose an appropriate name</string>
     <string name="exercises_choose_body_part">Choose a body part.</string>
 
-    <string name="exercises_subtitle_default">%1$d exercises · tap to log sets</string>
+    <string name="exercises_subtitle_default">%1$d exercises · tap for stats</string>
     <string name="exercises_subtitle_favourites">%1$d favourites</string>
     <string name="exercises_subtitle_results">%1$d results for “%2$s”</string>
     <string name="exercises_subtitle_results_category">%1$d results for “%2$s” · %3$s</string>
@@ -275,5 +275,121 @@
     <string name="add_exercise_set_added">Set Added</string>
     <string name="add_exercise_set_updated">Set Updated</string>
     <string name="add_exercise_set_deleted">Set Deleted</string>
+
+    <plurals name="exercise_progress_sessions">
+        <item quantity="one">%1$d session</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
+    <string name="exercise_progress_back">Back</string>
+    <string name="exercise_progress_log_sets">Log sets</string>
+    <string name="exercise_progress_more_actions">More actions</string>
+    <string name="exercise_progress_meta">Last trained %1$s · %2$d sets logged</string>
+    <string name="exercise_progress_no_history">No sets logged yet</string>
+    <string name="exercise_progress_no_sets_title">No sets yet</string>
+    <string name="exercise_progress_no_sets_body">Log the first set to start tracking progress for %1$s.</string>
+    <string name="exercise_progress_log_first_set">Log first set</string>
+
+    <string name="exercise_progress_metric_est_1rm">Est. 1RM</string>
+    <string name="exercise_progress_metric_top_set">Top set</string>
+    <string name="exercise_progress_metric_volume">Volume</string>
+    <string name="exercise_progress_metric_reps">Reps</string>
+    <string name="exercise_progress_metric_kicker">%1$s · %2$s</string>
+    <string name="exercise_progress_range_1m">1M</string>
+    <string name="exercise_progress_range_3m">3M</string>
+    <string name="exercise_progress_range_6m">6M</string>
+    <string name="exercise_progress_range_all">All</string>
+    <string name="exercise_progress_range_last_month">last month</string>
+    <string name="exercise_progress_range_last_3_months">last 3 months</string>
+    <string name="exercise_progress_range_last_6_months">last 6 months</string>
+    <string name="exercise_progress_range_all_time">all time</string>
+    <plurals name="exercise_progress_range_meta">
+        <item quantity="one">%1$s · %2$d session</item>
+        <item quantity="other">%1$s · %2$d sessions</item>
+    </plurals>
+    <string name="exercise_progress_pr_pill">PR · %1$s</string>
+    <string name="exercise_progress_no_change">no change</string>
+    <string name="exercise_progress_delta_up_kg">+%1$s kg</string>
+    <string name="exercise_progress_delta_down_kg">-%1$s kg</string>
+    <string name="exercise_progress_delta_up_pct">+%1$d%%</string>
+    <string name="exercise_progress_delta_down_pct">-%1$d%%</string>
+    <string name="exercise_progress_stat_sessions">sessions</string>
+    <string name="exercise_progress_stat_sets">sets</string>
+    <string name="exercise_progress_stat_volume">volume</string>
+
+    <string name="exercise_progress_chart_kicker">Progression</string>
+    <plurals name="exercise_progress_pr_count">
+        <item quantity="one">%1$d PR</item>
+        <item quantity="other">%1$d PRs</item>
+    </plurals>
+    <string name="exercise_progress_chart_pr">PR</string>
+    <string name="exercise_progress_pr_legend">PR point</string>
+    <string name="exercise_progress_chart_empty">No sessions in this range</string>
+    <string name="exercise_progress_chart_date_range">%1$s – %2$s</string>
+
+    <string name="exercise_progress_section_records">Records</string>
+    <string name="exercise_progress_section_all_time">all time</string>
+    <string name="exercise_progress_section_trends">Trends</string>
+    <string name="exercise_progress_record_heaviest">Heaviest set</string>
+    <string name="exercise_progress_record_best_set">Best set</string>
+    <string name="exercise_progress_record_most_reps">Most reps</string>
+    <string name="exercise_progress_record_best_session">Best session</string>
+    <string name="exercise_progress_record_actual_1rm">Actual 1RM</string>
+    <string name="exercise_progress_record_meta_single">× 1 rep</string>
+    <string name="exercise_progress_record_meta_reps">× %1$s reps</string>
+    <string name="exercise_progress_record_meta_weight_reps">%1$s kg × %2$s</string>
+    <string name="exercise_progress_record_meta_at_weight">@ %1$s kg</string>
+    <string name="exercise_progress_record_meta_sets">%1$d sets</string>
+    <string name="exercise_progress_insight_up_title">Building nicely</string>
+    <string name="exercise_progress_insight_down_title">Settling back</string>
+    <string name="exercise_progress_insight_copy_up">You went up from %1$s to %2$s across %3$d sessions since %4$s.</string>
+    <string name="exercise_progress_insight_copy_down">You went down from %1$s to %2$s across %3$d sessions since %4$s.</string>
+    <string name="exercise_progress_insight_no_sessions">No sessions in this range.</string>
+    <string name="exercise_progress_insight_in">in %1$s</string>
+    <string name="exercise_progress_insight_total">total</string>
+    <string name="exercise_progress_weekly_avg">weekly avg</string>
+    <string name="exercise_progress_consistency">Consistency</string>
+    <string name="exercise_progress_trends_last_weeks">last %1$d weeks</string>
+    <string name="exercise_progress_consistency_caption">%1$d-week streak · %2$s×/week avg</string>
+    <string name="exercise_progress_rep_ranges">Rep ranges</string>
+    <string name="exercise_progress_rep_ranges_meta">%1$d sets · all time</string>
+    <string name="exercise_progress_per_month">Per month</string>
+    <string name="exercise_progress_per_month_desc">sessions trained</string>
+    <string name="exercise_progress_weeks_ago">%1$d weeks ago</string>
+    <string name="exercise_progress_history_title">Every session</string>
+    <string name="exercise_progress_filter_all">All sessions</string>
+    <string name="exercise_progress_filter_pr">PR sessions</string>
+    <string name="exercise_progress_show_all">Show all %1$d sessions</string>
+    <string name="exercise_progress_show_fewer">Show fewer</string>
+    <string name="exercise_progress_same_top_set">same top set</string>
+    <string name="exercise_progress_pr_empty_title">No PR sessions</string>
+    <string name="exercise_progress_pr_empty_body">Switch back to All sessions to see the full history.</string>
+    <string name="exercise_progress_pr_chip_1rm">1RM</string>
+    <string name="exercise_progress_pr_chip_weight">WT</string>
+    <string name="exercise_progress_pr_chip_set">SET</string>
+    <string name="exercise_progress_pr_chip_volume">VOL</string>
+    <string name="exercise_progress_pr_chip_reps">REPS</string>
+    <string name="exercise_progress_pr_chip_more">+%1$d</string>
+    <string name="exercise_progress_set_index">#</string>
+    <string name="exercise_progress_set_weight">Weight</string>
+    <string name="exercise_progress_set_reps">Reps</string>
+    <string name="exercise_progress_set_volume">Vol</string>
+    <string name="exercise_progress_session_meta">%1$d sets · %2$s kg · %3$d reps</string>
+    <string name="exercise_progress_delta_weight_up">▲ %1$s kg</string>
+    <string name="exercise_progress_delta_weight_down">▼ %1$s kg</string>
+    <plurals name="exercise_progress_delta_reps_up">
+        <item quantity="one">▲ %1$d rep</item>
+        <item quantity="other">▲ %1$d reps</item>
+    </plurals>
+    <plurals name="exercise_progress_delta_reps_down">
+        <item quantity="one">▼ %1$d rep</item>
+        <item quantity="other">▼ %1$d reps</item>
+    </plurals>
+    <plurals name="exercise_progress_history_month_meta">
+        <item quantity="one">%1$d session · %2$s kg</item>
+        <item quantity="other">%1$d sessions · %2$s kg</item>
+    </plurals>
+    <string name="exercise_progress_set_est_1rm">Est. 1RM %1$s kg</string>
+    <string name="exercise_progress_comment_cd">Session comment</string>
+    <string name="exercise_progress_pr_set_cd">Personal record set</string>
 
 </resources>

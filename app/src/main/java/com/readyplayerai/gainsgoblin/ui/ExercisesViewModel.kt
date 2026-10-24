@@ -7,7 +7,10 @@ import com.readyplayerai.gainsgoblin.data.AppState
 import com.readyplayerai.gainsgoblin.data.WorkoutRepository
 import com.readyplayerai.gainsgoblin.domain.ExerciseStats
 import com.readyplayerai.gainsgoblin.domain.exerciseStats
+import com.readyplayerai.gainsgoblin.domain.todayDateString
 import com.readyplayerai.gainsgoblin.model.Exercise
+import com.readyplayerai.gainsgoblin.model.WorkoutDay
+import com.readyplayerai.gainsgoblin.model.WorkoutSet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +27,9 @@ data class ExercisesUiState(
     val loaded: Boolean = false,
     val knownExercises: List<Exercise> = emptyList(),
     val date: String? = null,
-    val stats: Map<String, ExerciseStats> = emptyMap()
+    val stats: Map<String, ExerciseStats> = emptyMap(),
+    val days: List<WorkoutDay> = emptyList(),
+    val selectedDate: String = ""
 )
 
 /**
@@ -55,7 +60,9 @@ class ExercisesViewModel @Inject constructor(
         loaded = state.loaded,
         knownExercises = state.knownExercises,
         date = date,
-        stats = exerciseStats(state.workoutDays)
+        stats = exerciseStats(state.workoutDays),
+        days = state.workoutDays,
+        selectedDate = state.selectedDate
     )
 
     suspend fun editExercise(oldName: String, newName: String, newBodyPart: String?) {
@@ -68,6 +75,13 @@ class ExercisesViewModel @Inject constructor(
 
     suspend fun addExercise(name: String, category: String?): Boolean =
         repository.addExercise(name, category)
+
+    suspend fun addSet(exerciseName: String, weight: Double, reps: Double) {
+        val state = _uiState.value
+        val date = state.selectedDate.ifBlank { todayDateString() }
+        val category = state.knownExercises.firstOrNull { it.Name == exerciseName }?.BodyPart
+        repository.addSet(WorkoutSet(date, exerciseName, category, reps, weight))
+    }
 
     suspend fun setFavorite(name: String, favorite: Boolean) {
         repository.setFavorite(name, favorite)

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -25,11 +26,10 @@ fun Sparkline(
     showArea: Boolean = true,
     showLastDot: Boolean = true,
     strokeWidth: Dp = 2.4.dp,
+    lineColor: Color = MaterialTheme.colorScheme.primary,
+    dotInnerColor: Color = MaterialTheme.colorScheme.surface,
 ) {
     if (values.size < 2) return
-
-    val primary = MaterialTheme.colorScheme.primary
-    val surface = MaterialTheme.colorScheme.surface
 
     Canvas(modifier) {
         val min = values.minOrNull() ?: 0f
@@ -39,7 +39,7 @@ fun Sparkline(
 
         if (max - min < 0.0001f) {
             drawLine(
-                color = primary,
+                color = lineColor,
                 start = Offset(0f, size.height / 2f),
                 end = Offset(size.width, size.height / 2f),
                 strokeWidth = strokeWidth.toPx(),
@@ -70,7 +70,7 @@ fun Sparkline(
             drawPath(
                 path = area,
                 brush = Brush.verticalGradient(
-                    listOf(primary.copy(alpha = 0.28f), primary.copy(alpha = 0f)),
+                    listOf(lineColor.copy(alpha = 0.28f), lineColor.copy(alpha = 0f)),
                     startY = 0f,
                     endY = size.height,
                 ),
@@ -79,7 +79,7 @@ fun Sparkline(
 
         drawPath(
             path = line,
-            color = primary,
+            color = lineColor,
             style = Stroke(
                 width = strokeWidth.toPx(),
                 cap = StrokeCap.Round,
@@ -89,8 +89,8 @@ fun Sparkline(
 
         if (showLastDot) {
             val last = Offset(x(values.size - 1), y(values[values.size - 1]))
-            drawCircle(color = primary, radius = 4.dp.toPx(), center = last)
-            drawCircle(color = surface, radius = 2.dp.toPx(), center = last)
+            drawCircle(color = lineColor, radius = 4.dp.toPx(), center = last)
+            drawCircle(color = dotInnerColor, radius = 2.dp.toPx(), center = last)
         }
     }
 }

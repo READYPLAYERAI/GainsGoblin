@@ -9,8 +9,8 @@ import com.readyplayerai.gainsgoblin.ui.compose.progress.ProgressScreen
 
 /** Progress tab: collects [ProgressViewModel] and renders [ProgressScreen]. */
 @Composable
-fun ProgressRoute() {
+fun ProgressRoute(onOpenExercise: (String) -> Unit) {
     val viewModel: ProgressViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsState()
-    ProgressScreen(uiState = state)
+    ProgressScreen(uiState = state, onOpenExercise = onOpenExercise)
 }
