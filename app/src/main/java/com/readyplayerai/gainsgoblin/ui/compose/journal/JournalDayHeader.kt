@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -122,6 +123,13 @@ internal fun JournalDayHeader(
     }
 }
 
+private val DateTileLineStyle = TextStyle(
+    lineHeightStyle = LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.None,
+    ),
+)
+
 @Composable
 private fun DateTile(day: WorkoutDay, isToday: Boolean) {
     val weekday = remember(day.Date) { formatDatePart(day.Date, "EEE") }
@@ -141,9 +149,14 @@ private fun DateTile(day: WorkoutDay, isToday: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        // Optical centering: the digits have no descender, so the block reads high
+        // inside the tile. A top spacer shifts the centred block down by half its height.
+        Spacer(Modifier.height(2.5.dp))
         Text(
             text = weekday.uppercase(Locale.getDefault()),
             fontSize = 9.sp,
+            lineHeight = 10.sp,
+            style = DateTileLineStyle,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.1.em,
             color = if (isToday) {
@@ -155,8 +168,9 @@ private fun DateTile(day: WorkoutDay, isToday: Boolean) {
         Text(
             text = dayOfMonth,
             fontSize = 19.sp,
+            lineHeight = 21.sp,
+            style = TextStyle(fontFeatureSettings = "tnum", lineHeightStyle = DateTileLineStyle.lineHeightStyle),
             fontWeight = FontWeight.Bold,
-            style = TextStyle(fontFeatureSettings = "tnum"),
             color = if (isToday) {
                 MaterialTheme.colorScheme.onPrimaryContainer
             } else {

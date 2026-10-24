@@ -1,6 +1,7 @@
 package com.readyplayerai.gainsgoblin.ui.compose.navigation
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -55,9 +56,13 @@ fun GainsGoblinApp() {
         NavHost(
             navController = navController,
             startDestination = JOURNAL_ROUTE,
+            // The shell pays for the bottom bar + system bar insets here, so consume
+            // them: nested screen Scaffolds must not apply the same insets again
+            // (that double-count pushed the Journal FAB 48dp too high).
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding),
         ) {
             composable(JOURNAL_ROUTE) { JournalRoute(scrollToTopTick = journalScrollToTopTick) }
             composable(EXERCISES_ROUTE) {
