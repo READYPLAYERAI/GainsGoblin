@@ -207,6 +207,13 @@
     </plurals>
 
     <string name="settings_subtitle">Backup, data &amp; about</string>
+    <string name="settings_hero_kicker">YOUR DATA</string>
+    <string name="settings_hero_title">Keep your gains safe</string>
+    <string name="settings_hero_body">Export a full backup or import one from another device.</string>
+    <string name="settings_export_action">Export backup</string>
+    <string name="settings_section_danger">Danger zone</string>
+    <string name="settings_undo_action">Undo</string>
+    <string name="settings_undo_unavailable">Nothing to undo</string>
     <string name="settings_section_backup">Backup &amp; restore</string>
     <string name="settings_section_about">About</string>
     <string name="settings_import_title">Import</string>
