@@ -15,6 +15,7 @@ Assemble a debug APK, install it on a device/emulator, launch it with `adb shell
 ## UI layout: who owns window insets
 
 - The app shell (`GainsGoblinApp`) owns window insets: its `Scaffold` sets `contentWindowInsets = WindowInsets(0, 0, 0, 0)` and hosts the persistent `GainsGoblinBottomBar`.
+- The bottom bar is the Material 3 Expressive *short* navigation bar (`ShortNavigationBar` / `ShortNavigationBarItem`, 64dp container with a 56×32dp pill). The legacy `NavigationBar` is hardcoded to 80dp in material3 and must not be used — it makes the bar 16dp taller than spec. Do not re-add a 1dp top divider; the bar is separated by `surfaceContainer` tone, not a hairline.
 - The `NavHost` applies `padding(innerPadding)` **and** `consumeWindowInsets(innerPadding)`, so nested screen `Scaffold`s see 0 remaining bottom inset — insets are paid for exactly once.
 - A screen `Scaffold` must **not** add `contentWindowInsets` overrides, `windowInsetsPadding`, or `statusBarsPadding` for chrome the shell already handles (`FlexibleHeaderBar` does its own `statusBarsPadding()`).
 - Screen content uses `innerPadding.calculateTopPadding()` for the top of a list and its own `contentPadding` for the bottom — never `calculateBottomPadding()`.

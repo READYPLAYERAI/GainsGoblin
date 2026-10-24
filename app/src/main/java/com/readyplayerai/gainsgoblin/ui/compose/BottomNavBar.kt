@@ -4,17 +4,13 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.readyplayerai.gainsgoblin.R
 
 /** The four top-level screens, in bottom bar display order. */
@@ -34,32 +30,20 @@ private val bottomNavItems = listOf(
 )
 
 /**
- * Material 3 Expressive bottom navigation bar. Pill indicator and springy
- * motion come from [GainsGoblinTheme]'s expressive motion scheme.
+ * Material 3 Expressive short navigation bar (64dp container). Pill indicator
+ * and springy motion come from [GainsGoblinTheme]'s expressive motion scheme.
  */
 @Composable
 fun GainsGoblinBottomBar(
     selectedTab: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
 ) {
-    val outlineVariant = MaterialTheme.colorScheme.outlineVariant
     val surfaceContainer = MaterialTheme.colorScheme.surfaceContainer
-    NavigationBar(
-        modifier = Modifier
-            .drawWithContent {
-                drawContent()
-                val stroke = 1.dp.toPx()
-                drawLine(
-                    color = outlineVariant,
-                    strokeWidth = stroke,
-                    start = Offset(0f, stroke / 2f),
-                    end = Offset(size.width, stroke / 2f),
-                )
-            },
+    ShortNavigationBar(
         containerColor = surfaceContainer,
     ) {
         bottomNavItems.forEach { item ->
-            NavigationBarItem(
+            ShortNavigationBarItem(
                 selected = item.tab == selectedTab,
                 onClick = { onTabSelected(item.tab) },
                 icon = {
@@ -69,8 +53,8 @@ fun GainsGoblinBottomBar(
                     )
                 },
                 label = { Text(stringResource(item.labelRes)) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedTextColor = MaterialTheme.colorScheme.secondary,
+                colors = ShortNavigationBarItemDefaults.colors(
+                    selectedTextColorTopIconPosition = MaterialTheme.colorScheme.secondary,
                 ),
             )
         }
