@@ -37,7 +37,7 @@ data class JournalUiState(
 )
 
 /**
- * Backs [JournalActivity]'s journal feed.
+ * Backs the Journal tab's journal feed.
  *
  * Owns the legacy "infinite" day window (built exactly once, like the legacy
  * `infiniteWorkoutDays` cache) as a descending, newest-first list

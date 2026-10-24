@@ -21,7 +21,7 @@ data class ProgressUiState(
 )
 
 /**
- * Backs [ProgressActivity].
+ * Backs the Progress tab.
  *
  * Maps [WorkoutRepository.appState]'s workout days and known exercises. The
  * Compose screen collects [uiState] directly.

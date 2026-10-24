@@ -343,7 +343,7 @@ fun JournalScreen(
         }
     }
 
-    // Notify the host (JournalActivity persists selectedDate) whenever the active day changes.
+    // Persist the selected date whenever the active day changes.
     LaunchedEffect(activeDayIndex, uiState.infiniteDays) {
         activeDay?.Date?.let(onSelectDate)
     }

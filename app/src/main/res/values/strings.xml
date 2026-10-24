@@ -1,21 +1,6 @@
 <resources>
     <string name="app_name">Gains Goblin</string>
-    <string name="title_activity_settings">SettingsActivity</string>
 
-    <!-- Preference Titles -->
-    <string name="messages_header">Messages</string>
-    <string name="sync_header">Sync</string>
-
-    <!-- Messages Preferences -->
-    <string name="signature_title">Your signature</string>
-    <string name="reply_title">Default reply action</string>
-
-    <!-- Sync Preferences -->
-    <string name="sync_title">Sync email periodically</string>
-    <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
-    <string name="attachment_summary_off">Only download attachments when manually requested</string>
     <string-array name="Categories">
         <item>Chest</item>
         <item>Back</item>
@@ -107,15 +92,10 @@
     <string name="progress_filter_all">All</string>
     <string name="progress_journal_empty_title">No workouts match</string>
     <string name="progress_journal_empty_body">Try a different body part or clear the search.</string>
-    <string name="top_bar_search">Search</string>
-    <string name="top_bar_close">Close</string>
     <string name="top_bar_add_exercise">New exercise</string>
 
     <string name="exercises_filter_all">All</string>
     <string name="exercises_search_placeholder">Search exercises or body part</string>
-    <string name="exercises_no_matches_title">No matching exercises</string>
-    <string name="exercises_no_matches_body">Try another chip or search term.</string>
-    <string name="exercises_subtitle_az">%1$d exercises · A–Z</string>
     <string name="exercises_subtitle_category">%1$d %2$s exercises</string>
     <string name="exercises_cd_more_actions">More actions for %1$s</string>
     <string name="exercises_rename">Rename</string>
@@ -135,7 +115,6 @@
     <string name="exercises_subtitle_results">%1$d results for “%2$s”</string>
     <string name="exercises_subtitle_results_category">%1$d results for “%2$s” · %3$s</string>
     <string name="exercises_subtitle_results_favourites">%1$d results for “%2$s” · Favourites</string>
-    <string name="exercises_filter_favourites">Favourites</string>
     <string name="exercises_filter_favourites_count">Favourites (%1$d)</string>
     <string name="exercises_search_clear">Clear search</string>
     <string name="exercises_sort">Sort exercises</string>
@@ -177,7 +156,6 @@
     <string name="exercises_added">Added “%1$s”</string>
     <string name="exercises_favourite_added">Added “%1$s” to favourites</string>
     <string name="exercises_favourite_removed">Removed “%1$s” from favourites</string>
-    <string name="exercises_saved">Saved “%1$s”</string>
     <plurals name="exercises_sets">
       <item quantity="one">%1$d set</item>
       <item quantity="other">%1$d sets</item>
@@ -188,8 +166,6 @@
     <string name="journal_pr_weight">WT PR</string>
     <string name="journal_pick_date">Pick a date</string>
     <string name="journal_date_picker_ok">OK</string>
-    <string name="journal_prev_month">Previous month</string>
-    <string name="journal_next_month">Next month</string>
     <string name="journal_title">Journal</string>
     <string name="journal_today_pill">TODAY</string>
     <string name="journal_day_summary">%1$d exercises · %2$d sets · %3$s kg</string>
@@ -220,10 +196,8 @@
     <string name="journal_set_note_title">Note for set %1$d</string>
     <string name="journal_set_note_hint">e.g. slow eccentric, left side first</string>
     <string name="journal_save_note">Save</string>
-    <string name="journal_set_actions">Set actions</string>
     <string name="journal_add_note">Add a note</string>
     <string name="journal_edit_set">Edit set</string>
-    <string name="journal_delete_set">Delete set</string>
     <string name="journal_draft_hint">Log the first set to add this exercise to the day.</string>
     <string name="journal_day_summary_one">1 exercise · %1$d sets · %2$s kg</string>
     <string name="journal_day_summary_one_set">1 exercise · 1 set · %1$s kg</string>
@@ -246,7 +220,6 @@
     <string name="settings_licence_title">Licence</string>
     <string name="settings_licence_summary">GNU General Public Licence, version 3</string>
     <string name="settings_import_warning_body">Choose Merge to add this backup, or Replace to overwrite your workout history. A backup is saved first.</string>
-    <string name="settings_import_overwrite">Overwrite</string>
     <string name="settings_import_choose_file">Choose backup</string>
     <string name="settings_import_format_json">Gains Goblin JSON backup</string>
     <string name="settings_import_format_legacy">Gains Goblin CSV (old backup)</string>

@@ -28,9 +28,9 @@ data class ExercisesUiState(
 )
 
 /**
- * Backs [ExercisesActivity].
+ * Backs the Exercises tab.
  *
- * Maps [WorkoutRepository.appState]'s known exercises. The Activity collects
+ * Maps [WorkoutRepository.appState]'s known exercises. The Compose screen collects
  * [uiState] continuously for re-rendering mid-session.
  */
 @HiltViewModel
