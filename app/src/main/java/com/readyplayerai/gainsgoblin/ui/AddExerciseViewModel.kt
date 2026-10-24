@@ -31,7 +31,7 @@ data class AddExerciseUiState(
 )
 
 /**
- * Backs [AddExerciseActivity].
+ * Backs [AddExerciseRoute].
  *
  * Maps [WorkoutRepository.appState] for the exercise named by the `"exercise"`
  * intent extra (populated into [SavedStateHandle] by Hilt), and forwards every
