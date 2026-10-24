@@ -492,7 +492,7 @@ fun JournalScreen(
                                 onCancelEdit = { cancelEdit(exercise) },
                             ),
                             modifier = if (exerciseIndex == 0) {
-                                Modifier.padding(top = 8.dp)
+                                Modifier.padding(top = 12.dp)
                             } else {
                                 Modifier
                             },
@@ -550,7 +550,7 @@ fun JournalScreen(
                                     composer = initialComposer(draftForDay.date, draftForDay.name, null)
                                 },
                             ),
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier = Modifier.padding(top = 12.dp),
                         )
                     }
                 }

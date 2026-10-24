@@ -124,7 +124,7 @@ internal fun JournalExerciseCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = cardColor),
         border = if (state.expanded) {
@@ -136,7 +136,7 @@ internal fun JournalExerciseCard(
             defaultElevation = if (state.expanded) 6.dp else 0.dp,
         ),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 6.dp)) {
+        Column(modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 8.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
