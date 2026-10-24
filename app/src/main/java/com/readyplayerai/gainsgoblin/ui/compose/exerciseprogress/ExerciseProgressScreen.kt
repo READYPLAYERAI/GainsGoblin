@@ -314,11 +314,6 @@ fun ExerciseProgressScreen(
     if (showActions && sheetExercise != null) {
         ExerciseActionSheet(
             exercise = sheetExercise,
-            onLogSets = {
-                showActions = false
-                showLogSheet = true
-            },
-            onToggleFavorite = { favorite -> onToggleFavorite(favorite) },
             onDismiss = { showActions = false },
             onRename = onRename,
             onChangeCategory = onRename,

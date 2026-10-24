@@ -51,21 +51,22 @@ private enum class EditAction { Rename, ChangeCategory }
 /**
  * M3 Expressive bottom sheet with the exercise's actions (rename, change
  * category, delete), an inline edit view and a delete confirmation dialog.
+ *
+ * Log Sets and Favourite are optional and only shown when their callbacks are
+ * supplied.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ExerciseActionSheet(
     exercise: Exercise,
-    onLogSets: () -> Unit,
-    onToggleFavorite: (favorite: Boolean) -> Unit,
+    onLogSets: (() -> Unit)? = null,
+    onToggleFavorite: ((favorite: Boolean) -> Unit)? = null,
     onDismiss: () -> Unit,
     onRename: (oldName: String, newName: String, newCategory: String?) -> Unit,
     onChangeCategory: (oldName: String, newName: String, newCategory: String?) -> Unit,
     onDelete: (name: String) -> Unit,
 ) {
-    val isFavorite = exercise.favorite == true
     val context = LocalContext.current
-    val favouriteLabel = stringResource(R.string.exercises_favourite)
     val categories = stringArrayResource(R.array.Categories)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -188,52 +189,58 @@ fun ExerciseActionSheet(
                         .padding(horizontal = 24.dp)
                         .padding(bottom = 8.dp),
                 )
-                Button(
-                    onClick = onLogSets,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .height(52.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_fitness_center_24px),
-                        contentDescription = null,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(stringResource(R.string.exercises_log_sets))
+                onLogSets?.let { logSets ->
+                    Button(
+                        onClick = logSets,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .height(52.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_fitness_center_24px),
+                            contentDescription = null,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(stringResource(R.string.exercises_log_sets))
+                    }
+                    Spacer(Modifier.height(12.dp))
                 }
-                Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                        .clickable { onToggleFavorite(!isFavorite) }
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        painter = painterResource(
-                            if (isFavorite) R.drawable.ic_star_fill0_wght400_grad0_opsz48
-                            else R.drawable.ic_star_outline_24px
-                        ),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isFavorite) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = favouriteLabel,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Switch(
-                        checked = isFavorite,
-                        onCheckedChange = onToggleFavorite,
-                        modifier = Modifier.semantics {
-                            contentDescription = favouriteLabel
-                        },
-                    )
+                onToggleFavorite?.let { toggleFavorite ->
+                    val isFavorite = exercise.favorite == true
+                    val favouriteLabel = stringResource(R.string.exercises_favourite)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                            .clickable { toggleFavorite(!isFavorite) }
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(
+                                if (isFavorite) R.drawable.ic_star_fill0_wght400_grad0_opsz48
+                                else R.drawable.ic_star_outline_24px
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            text = favouriteLabel,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = isFavorite,
+                            onCheckedChange = toggleFavorite,
+                            modifier = Modifier.semantics {
+                                contentDescription = favouriteLabel
+                            },
+                        )
+                    }
                 }
                 SheetActionRow(
                     label = stringResource(R.string.exercises_rename),
