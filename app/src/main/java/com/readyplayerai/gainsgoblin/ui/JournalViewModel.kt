@@ -66,9 +66,6 @@ class JournalViewModel @Inject constructor(
         }
     }
 
-    /** Fresh, never-stale state straight from the repository (re-runs the state pipeline). */
-    suspend fun freshUiState(): JournalUiState = mapAppState(repository.currentAppState())
-
     private fun mapAppState(state: AppState): JournalUiState = JournalUiState(
         loaded = state.loaded,
         infiniteDays = infiniteDays,

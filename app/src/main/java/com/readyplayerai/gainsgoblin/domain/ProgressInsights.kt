@@ -192,7 +192,7 @@ fun periodStats(days: List<WorkoutDay>, range: PeriodRange, today: Date = Date()
  * Builds one volume bucket per Monday-start week that contains a valid day,
  * ascending by week and labelled with that week's Monday.
  */
-fun weeklyVolumeBuckets(days: List<WorkoutDay>, today: Date = Date()): List<VolumeBucket> {
+fun weeklyVolumeBuckets(days: List<WorkoutDay>): List<VolumeBucket> {
     val format = SimpleDateFormat("yyyy-MM-dd")
     val totals = TreeMap<Long, Double>()
     for (day in days) {

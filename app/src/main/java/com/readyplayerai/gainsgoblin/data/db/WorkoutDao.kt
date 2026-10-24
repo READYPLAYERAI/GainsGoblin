@@ -58,9 +58,6 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sets WHERE date = :date ORDER BY id ASC")
     suspend fun getSetsForDate(date: String): List<WorkoutSetEntity>
 
-    @Query("SELECT * FROM workout_sets WHERE exercise_name = :name ORDER BY date ASC, id ASC")
-    suspend fun getSetsForExercise(name: String): List<WorkoutSetEntity>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertExercises(exercises: List<ExerciseEntity>)
 

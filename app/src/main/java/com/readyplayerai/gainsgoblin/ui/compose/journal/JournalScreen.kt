@@ -233,7 +233,7 @@ fun JournalScreen(
         }
     }
 
-    fun initialComposer(date: String, name: String, exercise: WorkoutExercise?): JournalComposerState {
+    fun initialComposer(name: String, exercise: WorkoutExercise?): JournalComposerState {
         val last = exercise?.Sets?.lastOrNull()
         val fallback = lastPerformed(uiState.realDays, name)
         val weight = last?.weight ?: fallback?.set?.weight
@@ -261,7 +261,7 @@ fun JournalScreen(
         saveOpenNoteIfChanged()
         expanded = ExerciseKey(date, name)
         noteText = exercise?.Comment.orEmpty()
-        composer = initialComposer(date, name, exercise)
+        composer = initialComposer(name, exercise)
     }
 
     fun collapseExpanded() {
@@ -290,7 +290,7 @@ fun JournalScreen(
 
     fun cancelEdit(exercise: WorkoutExercise?) {
         val key = expanded ?: return
-        composer = initialComposer(key.date, key.name, exercise)
+        composer = initialComposer(key.name, exercise)
     }
 
     fun stepWeight(delta: Int) {
@@ -547,7 +547,7 @@ fun JournalScreen(
                                     )
                                 },
                                 onCancelEdit = {
-                                    composer = initialComposer(draftForDay.date, draftForDay.name, null)
+                                    composer = initialComposer(draftForDay.name, null)
                                 },
                             ),
                             modifier = Modifier.padding(top = 12.dp),

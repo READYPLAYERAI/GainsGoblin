@@ -118,58 +118,6 @@ class RoomWorkoutStore @Inject constructor(
         }
     }
 
-    suspend fun insertImportedSets(sets: List<WorkoutSet>, now: Long = System.currentTimeMillis()) {
-        if (sets.isEmpty()) {
-            return
-        }
-        val entities = sets.mapIndexed { index, set -> set.toEntity(createdAt = now + index) }
-        dao.insertSets(entities)
-    }
-
-    suspend fun replaceWorkoutSets(sets: List<WorkoutSet>, now: Long = System.currentTimeMillis()) {
-        database.withTransaction {
-            dao.deleteAllSets()
-            if (sets.isEmpty()) {
-                return@withTransaction
-            }
-            val entities = sets.mapIndexed { index, set -> set.toEntity(createdAt = now + index) }
-            dao.insertSets(entities)
-        }
-    }
-
-    suspend fun upsertImportedExercises(exercises: List<Exercise>) {
-        database.withTransaction {
-            val existing = dao.getAllExercises().associateBy { it.name }
-            var nextOrder = (existing.values.maxOfOrNull { it.sortOrder } ?: -1) + 1
-            val entities = exercises.map { exercise ->
-                val name = requireNotNull(exercise.Name) { "Exercise Name is null" }
-                val current = existing[name]
-                if (current != null) {
-                    ExerciseEntity(
-                        name = name,
-                        bodyPart = exercise.BodyPart ?: current.bodyPart,
-                        favorite = exercise.favorite ?: current.favorite,
-                        sortOrder = current.sortOrder
-                    )
-                } else {
-                    ExerciseEntity(
-                        name = name,
-                        bodyPart = exercise.BodyPart,
-                        favorite = exercise.favorite ?: false,
-                        sortOrder = nextOrder++
-                    )
-                }
-            }
-            dao.upsertExercises(entities)
-        }
-    }
-
-    suspend fun allSetsForFingerprint(): List<WorkoutSet> =
-        dao.getAllSets().map { it.toModel() }
-
-    suspend fun allExercisesForFingerprint(): List<Exercise> =
-        dao.getAllExercises().map { it.toModel() }
-
     suspend fun meta(key: String): String? = dao.getMeta(key)?.value
 
     suspend fun putMeta(key: String, value: String) {

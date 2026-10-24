@@ -151,32 +151,6 @@ class WorkoutRepository @Inject constructor(
         appStateFlow.value = appStateFlow.value.copy(selectedDate = date)
     }
 
-    /** Returns the index of the day with [date] in the current days list, or -1. */
-    fun dayPosition(date: String): Int {
-        val days = appState.value.workoutDays
-        for (i in days.indices) {
-            if (days[i].Date == date) {
-                return i
-            }
-        }
-        return -1
-    }
-
-    /** Returns the index of [exerciseName] within the day with [date], or -1. */
-    fun exercisePosition(date: String, exerciseName: String): Int {
-        val position = dayPosition(date)
-        if (position == -1) {
-            return -1
-        }
-        val exercises = appState.value.workoutDays[position].Exercises ?: return -1
-        for (i in exercises.indices) {
-            if (exercises[i].Exercise == exerciseName) {
-                return i
-            }
-        }
-        return -1
-    }
-
     // ---------------------------------------------------------------------------------
     // Workout mutations (Room is the source of truth; flows update [appState])
     // ---------------------------------------------------------------------------------

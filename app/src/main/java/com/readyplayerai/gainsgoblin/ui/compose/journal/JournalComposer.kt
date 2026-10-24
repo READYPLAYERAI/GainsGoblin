@@ -81,20 +81,6 @@ internal data class JournalDraft(
     val category: String,
 )
 
-internal val NoOpJournalCardCallbacks = JournalCardCallbacks(
-    onToggle = {},
-    onSetClick = {},
-    onSetMore = {},
-    onNoteChange = {},
-    onNoteSave = {},
-    onWeightChange = {},
-    onRepsChange = {},
-    onStepWeight = {},
-    onStepReps = {},
-    onLogSet = {},
-    onCancelEdit = {},
-)
-
 /**
  * Inline composer for logging a new set or editing an existing one directly on
  * an expanded journal exercise card: a titled panel holding weight and reps

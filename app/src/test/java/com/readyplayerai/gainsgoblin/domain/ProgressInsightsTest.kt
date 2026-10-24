@@ -168,10 +168,7 @@ class ProgressInsightsTest {
         val juneThird = day("2026-06-03", set("2026-06-03", "Bench", 5.0, 10.0))
         val juneEighth = day("2026-06-08", set("2026-06-08", "Bench", 20.0, 10.0))
 
-        val buckets = weeklyVolumeBuckets(
-            listOf(juneEighth, juneThird, juneFirst),
-            date(2026, 6, 10)
-        )
+        val buckets = weeklyVolumeBuckets(listOf(juneEighth, juneThird, juneFirst))
 
         assertEquals(2, buckets.size)
         assertEquals("2026-06-01", buckets[0].label)
