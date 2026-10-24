@@ -45,6 +45,7 @@ internal fun JournalDayHeader(
     day: WorkoutDay,
     realDay: WorkoutDay?,
     isToday: Boolean,
+    draftExerciseCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val headerBackground = if (isToday) {
@@ -86,7 +87,7 @@ internal fun JournalDayHeader(
                         color = titleColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                     if (isToday) {
                         Spacer(Modifier.width(8.dp))
@@ -95,7 +96,7 @@ internal fun JournalDayHeader(
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = headerSummary(realDay),
+                    text = headerSummary(realDay, draftExerciseCount),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     style = TextStyle(fontFeatureSettings = "tnum"),
@@ -186,20 +187,28 @@ private fun TodayPill() {
 }
 
 @Composable
-private fun headerSummary(realDay: WorkoutDay?): String {
-    if (realDay?.Exercises.isNullOrEmpty()) {
+private fun headerSummary(realDay: WorkoutDay?, draftExerciseCount: Int): String {
+    val exercises = realDay?.Exercises.orEmpty()
+    val exerciseCount = exercises.size + draftExerciseCount
+    if (exerciseCount == 0) {
         return stringResource(R.string.journal_rest_day_summary)
     }
-    val exercises = realDay?.Exercises.orEmpty()
     val setCount = exercises.sumOf { it.Sets?.size ?: 0 }
     val volume = realDay?.DayVolume ?: 0.0
     val volumeText = NumberFormat.getIntegerInstance(Locale.getDefault()).format(volume.roundToInt())
-    val base = stringResource(
-        R.string.journal_day_summary,
-        exercises.size,
-        setCount,
-        volumeText,
-    )
+    val base = when {
+        exerciseCount == 1 && setCount == 1 ->
+            stringResource(R.string.journal_day_summary_one_set, volumeText)
+        exerciseCount == 1 ->
+            stringResource(R.string.journal_day_summary_one, setCount, volumeText)
+        else ->
+            stringResource(
+                R.string.journal_day_summary,
+                exerciseCount,
+                setCount,
+                volumeText,
+            )
+    }
     val pr = findJournalPr(exercises)
     return if (pr != null) {
         base + " · ★ " + stringResource(R.string.journal_day_pr_flag)

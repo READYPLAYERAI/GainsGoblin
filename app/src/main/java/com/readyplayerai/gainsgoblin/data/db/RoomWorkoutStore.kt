@@ -39,6 +39,13 @@ class RoomWorkoutStore @Inject constructor(
         }
     }
 
+    suspend fun updateSetNote(date: String, setIndex: Int, comment: String?) {
+        val sets = dao.getSetsForDate(date)
+        if (setIndex in sets.indices) {
+            dao.updateSet(sets[setIndex].copy(comment = comment))
+        }
+    }
+
     suspend fun removeSet(date: String, setIndex: Int) {
         val sets = dao.getSetsForDate(date)
         if (setIndex in sets.indices) {

@@ -186,6 +186,9 @@ class WorkoutRepository @Inject constructor(
     suspend fun updateSet(date: String, setIndex: Int, reps: Double, weight: Double) =
         store.updateSet(date, setIndex, reps, weight)
 
+    suspend fun updateSetNote(date: String, setIndex: Int, comment: String?) =
+        store.updateSetNote(date, setIndex, comment)
+
     suspend fun removeSet(date: String, setIndex: Int) = store.removeSet(date, setIndex)
 
     suspend fun deleteDay(date: String) = store.deleteDay(date)

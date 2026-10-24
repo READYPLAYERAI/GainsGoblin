@@ -8,6 +8,7 @@ import com.readyplayerai.gainsgoblin.data.WorkoutRepository
 import com.readyplayerai.gainsgoblin.domain.buildInfiniteDays
 import com.readyplayerai.gainsgoblin.model.Exercise
 import com.readyplayerai.gainsgoblin.model.WorkoutDay
+import com.readyplayerai.gainsgoblin.model.WorkoutSet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
 import java.util.Date
@@ -88,6 +89,89 @@ class JournalViewModel @Inject constructor(
 
     /** Writes the retained raw legacy payloads to [uri]; false when there is nothing or the write fails. */
     suspend fun exportLegacyRaw(uri: Uri): Boolean = repository.exportLegacyRaw(uri)
+
+    suspend fun addJournalSet(
+        date: String,
+        exerciseName: String,
+        category: String?,
+        reps: Double,
+        weight: Double,
+        comment: String?,
+    ) {
+        repository.addSet(WorkoutSet(date, exerciseName, category, reps, weight, comment))
+    }
+
+    suspend fun updateJournalSet(
+        date: String,
+        exerciseName: String,
+        exerciseSetIndex: Int,
+        weight: Double,
+        reps: Double,
+    ) {
+        val rawIndex = resolveRawSetIndex(date, exerciseName, exerciseSetIndex) ?: return
+        repository.updateSet(date, rawIndex, reps, weight)
+    }
+
+    suspend fun deleteJournalSet(
+        date: String,
+        exerciseName: String,
+        exerciseSetIndex: Int,
+    ) {
+        val rawIndex = resolveRawSetIndex(date, exerciseName, exerciseSetIndex) ?: return
+        repository.removeSet(date, rawIndex)
+    }
+
+    suspend fun updateJournalSetNote(
+        date: String,
+        exerciseName: String,
+        exerciseSetIndex: Int,
+        comment: String?,
+    ) {
+        val rawIndex = resolveRawSetIndex(date, exerciseName, exerciseSetIndex) ?: return
+        repository.updateSetNote(date, rawIndex, comment)
+    }
+
+    suspend fun updateJournalExerciseNote(
+        date: String,
+        exerciseName: String,
+        comment: String?,
+    ) {
+        val day = repository.currentAppState().workoutDays.firstOrNull { it.Date == date } ?: return
+        val exercise = day.Exercises?.firstOrNull { it.Exercise == exerciseName } ?: return
+        val lastIndex = (exercise.Sets?.lastIndex ?: -1)
+        if (lastIndex < 0) return
+        val rawIndex = rawSetIndex(day, exerciseName, lastIndex) ?: return
+        repository.updateSetNote(date, rawIndex, comment)
+    }
+
+    suspend fun addExercise(name: String, category: String?): Boolean =
+        repository.addExercise(name, category)
+
+    private suspend fun resolveRawSetIndex(
+        date: String,
+        exerciseName: String,
+        exerciseSetIndex: Int,
+    ): Int? {
+        val day = repository.currentAppState().workoutDays.firstOrNull { it.Date == date } ?: return null
+        return rawSetIndex(day, exerciseName, exerciseSetIndex)
+    }
+
+    private fun rawSetIndex(
+        day: WorkoutDay,
+        exerciseName: String,
+        exerciseSetIndex: Int,
+    ): Int? {
+        if (exerciseSetIndex < 0) return null
+        val raw = day.Sets ?: return null
+        var seen = 0
+        for (i in raw.indices) {
+            if (raw[i].exerciseName == exerciseName) {
+                if (seen == exerciseSetIndex) return i
+                seen++
+            }
+        }
+        return null
+    }
 
     /**
      * Builds the descending day window `[today .. today - 5 years]`.

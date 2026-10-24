@@ -1,6 +1,5 @@
 package com.readyplayerai.gainsgoblin.ui
 
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 
@@ -73,19 +72,12 @@ class JournalActivity : AppCompatActivity() {
 
     // The Compose journal island: vertical journal feed + flexible app bar.
     private fun setupJournal() {
-        val activity = this
         findViewById<ComposeView>(R.id.journal_view).setContent {
             GainsGoblinTheme {
                 val uiState by viewModel.uiState.collectAsState()
                 JournalScreen(
                     uiState = uiState,
                     categoryFor = { name -> exerciseCategoryFor(uiState.knownExercises, name) },
-                    onExerciseClick = { exercise, date ->
-                        val intent = Intent(activity, AddExerciseActivity::class.java)
-                        intent.putExtra("exercise", exercise)
-                        date?.let { viewModel.selectDate(it) }
-                        activity.startActivity(intent)
-                    },
                     onSelectDate = { date ->
                         viewModel.selectDate(date)
                     },
@@ -103,6 +95,36 @@ class JournalActivity : AppCompatActivity() {
                                     Toast.LENGTH_LONG,
                                 ).show()
                             }
+                        }
+                    },
+                    onAddSet = { date, name, category, reps, weight, comment ->
+                        lifecycleScope.launch {
+                            viewModel.addJournalSet(date, name, category, reps, weight, comment)
+                        }
+                    },
+                    onUpdateSet = { date, name, index, weight, reps ->
+                        lifecycleScope.launch {
+                            viewModel.updateJournalSet(date, name, index, weight, reps)
+                        }
+                    },
+                    onDeleteSet = { date, name, index ->
+                        lifecycleScope.launch {
+                            viewModel.deleteJournalSet(date, name, index)
+                        }
+                    },
+                    onSetNote = { date, name, index, note ->
+                        lifecycleScope.launch {
+                            viewModel.updateJournalSetNote(date, name, index, note)
+                        }
+                    },
+                    onExerciseNote = { date, name, note ->
+                        lifecycleScope.launch {
+                            viewModel.updateJournalExerciseNote(date, name, note)
+                        }
+                    },
+                    onAddExercise = { name, category, onResult ->
+                        lifecycleScope.launch {
+                            onResult(viewModel.addExercise(name, category))
                         }
                     },
                 )
