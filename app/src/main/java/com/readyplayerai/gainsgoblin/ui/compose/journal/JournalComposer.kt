@@ -268,6 +268,7 @@ private fun ComposerStepper(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 fontFeatureSettings = "tnum",
+                color = MaterialTheme.colorScheme.onSurface,
             ),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
