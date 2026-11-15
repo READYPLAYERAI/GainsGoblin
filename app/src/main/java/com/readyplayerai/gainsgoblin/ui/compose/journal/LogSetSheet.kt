@@ -35,7 +35,9 @@ internal fun LogSetSheet(
     initialWeight: Double?,
     initialReps: Double?,
     editingSetIndex: Int?,
-    onSave: (weight: Double, reps: Double) -> Unit,
+    initialNote: String? = null,
+    showNoteField: Boolean = false,
+    onSave: (weight: Double, reps: Double, note: String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -49,7 +51,14 @@ internal fun LogSetSheet(
         ""
     }
 
-    var state by remember(exerciseName, initialWeight, initialReps, editingSetIndex) {
+    var state by remember(
+        exerciseName,
+        initialWeight,
+        initialReps,
+        editingSetIndex,
+        initialNote,
+        showNoteField,
+    ) {
         mutableStateOf(
             JournalComposerState(
                 weight = formatWeightValue(initialWeight),
@@ -58,6 +67,8 @@ internal fun LogSetSheet(
                 originalWeight = initialWeight,
                 originalReps = initialReps,
                 sourceLabel = sourceLabel,
+                note = initialNote.orEmpty(),
+                noteEnabled = showNoteField && editingSetIndex == null,
             ),
         )
     }
@@ -73,7 +84,7 @@ internal fun LogSetSheet(
             ).show()
             return
         }
-        onSave(weight, reps)
+        onSave(weight, reps, state.note.trim().ifBlank { null })
     }
 
     ModalBottomSheet(
@@ -115,6 +126,7 @@ internal fun LogSetSheet(
                         reps = (current.roundToInt() + delta).coerceAtLeast(0).toString(),
                     )
                 },
+                onNoteChange = { state = state.copy(note = it) },
                 onLogSet = { save() },
                 onCancelEdit = onDismiss,
             )

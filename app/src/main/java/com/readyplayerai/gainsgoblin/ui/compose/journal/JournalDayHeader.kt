@@ -46,7 +46,6 @@ internal fun JournalDayHeader(
     day: WorkoutDay,
     realDay: WorkoutDay?,
     isToday: Boolean,
-    draftExerciseCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val headerBackground = if (isToday) {
@@ -97,7 +96,7 @@ internal fun JournalDayHeader(
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = headerSummary(realDay, draftExerciseCount),
+                    text = headerSummary(realDay),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     style = TextStyle(fontFeatureSettings = "tnum"),
@@ -201,9 +200,9 @@ private fun TodayPill() {
 }
 
 @Composable
-private fun headerSummary(realDay: WorkoutDay?, draftExerciseCount: Int): String {
+private fun headerSummary(realDay: WorkoutDay?): String {
     val exercises = realDay?.Exercises.orEmpty()
-    val exerciseCount = exercises.size + draftExerciseCount
+    val exerciseCount = exercises.size
     if (exerciseCount == 0) {
         return stringResource(R.string.journal_rest_day_summary)
     }

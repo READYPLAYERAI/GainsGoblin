@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,41 +51,32 @@ internal data class JournalComposerState(
     val originalWeight: Double? = null,
     val originalReps: Double? = null,
     val sourceLabel: String = "",
+    val note: String = "",
+    val noteEnabled: Boolean = false,
 )
 
 internal data class JournalCardState(
     val expanded: Boolean = false,
-    val isDraft: Boolean = false,
-    val composer: JournalComposerState = JournalComposerState(),
     val note: String = "",
 )
 
 internal data class JournalCardCallbacks(
-    val onToggle: () -> Unit,
+    val onCardClick: () -> Unit,
+    val onOpenStats: () -> Unit,
+    val onExpandToggle: () -> Unit,
     val onSetClick: (Int) -> Unit,
     val onSetMore: (Int) -> Unit,
     val onNoteChange: (String) -> Unit,
     val onNoteSave: () -> Unit,
-    val onWeightChange: (String) -> Unit,
-    val onRepsChange: (String) -> Unit,
-    val onStepWeight: (Int) -> Unit,
-    val onStepReps: (Int) -> Unit,
-    val onLogSet: () -> Unit,
-    val onCancelEdit: () -> Unit,
 )
 
 internal data class ExerciseKey(val date: String, val name: String)
 
-internal data class JournalDraft(
-    val date: String,
-    val name: String,
-    val category: String,
-)
-
 /**
- * Inline composer for logging a new set or editing an existing one directly on
- * an expanded journal exercise card: a titled panel holding weight and reps
- * steppers plus a Log set (or Update set + Cancel) action row.
+ * Shared weight/reps composer for logging a new set or editing an existing one:
+ * a titled panel holding the weight and reps steppers plus a Log set (or
+ * Update set + Cancel) action row. It is hosted by [LogSetSheet] on the Journal,
+ * the Exercises tab and the exercise detail page.
  */
 @Composable
 internal fun JournalComposer(
@@ -93,6 +85,7 @@ internal fun JournalComposer(
     onRepsChange: (String) -> Unit,
     onStepWeight: (Int) -> Unit,
     onStepReps: (Int) -> Unit,
+    onNoteChange: (String) -> Unit,
     onLogSet: () -> Unit,
     onCancelEdit: () -> Unit,
     modifier: Modifier = Modifier,
@@ -161,6 +154,13 @@ internal fun JournalComposer(
                     onDecrease = { onStepReps(-1) },
                     onIncrease = { onStepReps(1) },
                 )
+                if (state.noteEnabled) {
+                    ComposerNoteField(
+                        value = state.note,
+                        hint = stringResource(R.string.journal_set_note_hint),
+                        onValueChange = onNoteChange,
+                    )
+                }
             }
 
             if (editing) {
@@ -324,4 +324,53 @@ private fun formatWeight(value: Double?): String {
 private fun formatReps(value: Double?): String {
     if (value == null) return "?"
     return value.roundToInt().toString()
+}
+
+/** A 52dp-min rounded note row inside the composer, mirroring the journal card's note field. */
+@Composable
+private fun ComposerNoteField(
+    value: String,
+    hint: String,
+    onValueChange: (String) -> Unit,
+) {
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_note_24px),
+            contentDescription = null,
+            tint = onSurfaceVariant,
+            modifier = Modifier.size(17.dp),
+        )
+        Spacer(Modifier.width(9.dp))
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(1f),
+            textStyle = TextStyle(
+                fontSize = 13.5.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+            ),
+            singleLine = true,
+            decorationBox = { inner ->
+                Box {
+                    if (value.isBlank()) {
+                        Text(
+                            text = hint,
+                            fontSize = 13.5.sp,
+                            color = onSurfaceVariant,
+                        )
+                    }
+                    inner()
+                }
+            },
+        )
+    }
 }

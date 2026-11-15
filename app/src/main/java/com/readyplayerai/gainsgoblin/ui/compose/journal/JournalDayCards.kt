@@ -143,7 +143,7 @@ internal fun JournalExerciseCard(
                     .clickable(
                         interactionSource = titleInteraction,
                         indication = null,
-                        onClick = callbacks.onToggle,
+                        onClick = callbacks.onCardClick,
                     )
                     .padding(start = 20.dp, end = 10.dp, top = 16.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -176,7 +176,21 @@ internal fun JournalExerciseCard(
                     )
                 }
                 IconButton(
-                    onClick = callbacks.onToggle,
+                    onClick = callbacks.onOpenStats,
+                    modifier = Modifier.size(32.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = onSurfaceVariant,
+                    ),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_leaderboard_24px),
+                        contentDescription = stringResource(R.string.journal_open_stats),
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                IconButton(
+                    onClick = callbacks.onExpandToggle,
                     modifier = Modifier.size(32.dp),
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = if (state.expanded) {
@@ -214,14 +228,13 @@ internal fun JournalExerciseCard(
                     isPr = index == prSetIndex,
                     prLabelRes = pr?.labelRes,
                     expanded = state.expanded,
-                    editing = state.composer.editingSetIndex == index,
                     hideComment = !exerciseComment.isNullOrBlank() &&
                         set.comment == exerciseComment,
                     onClick = {
                         if (state.expanded) {
                             callbacks.onSetClick(index)
                         } else {
-                            callbacks.onToggle()
+                            callbacks.onExpandToggle()
                         }
                     },
                     onMoreClick = { callbacks.onSetMore(index) },
@@ -229,7 +242,7 @@ internal fun JournalExerciseCard(
             }
             if (!state.expanded && !exerciseComment.isNullOrBlank()) {
                 Surface(
-                    onClick = callbacks.onToggle,
+                    onClick = callbacks.onExpandToggle,
                     color = Color.Transparent,
                 ) {
                     Row(
@@ -305,23 +318,6 @@ internal fun JournalExerciseCard(
                             },
                         )
                     }
-                    JournalComposer(
-                        state = state.composer,
-                        onWeightChange = callbacks.onWeightChange,
-                        onRepsChange = callbacks.onRepsChange,
-                        onStepWeight = callbacks.onStepWeight,
-                        onStepReps = callbacks.onStepReps,
-                        onLogSet = callbacks.onLogSet,
-                        onCancelEdit = callbacks.onCancelEdit,
-                    )
-                    if (state.isDraft) {
-                        Text(
-                            text = stringResource(R.string.journal_draft_hint),
-                            modifier = Modifier.padding(top = 6.dp, start = 4.dp),
-                            fontSize = 11.5.sp,
-                            color = onSurfaceVariant,
-                        )
-                    }
                 }
             }
         }
@@ -335,7 +331,6 @@ private fun JournalSetRow(
     isPr: Boolean,
     prLabelRes: Int?,
     expanded: Boolean,
-    editing: Boolean,
     hideComment: Boolean,
     onClick: () -> Unit,
     onMoreClick: () -> Unit,
@@ -364,11 +359,6 @@ private fun JournalSetRow(
                 ),
             shape = rowShape,
             color = rowColor,
-            border = if (editing) {
-                BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-            } else {
-                null
-            },
         ) {
             Row(
                 modifier = Modifier

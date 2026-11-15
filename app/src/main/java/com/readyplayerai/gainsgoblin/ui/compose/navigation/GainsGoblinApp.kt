@@ -64,7 +64,12 @@ fun GainsGoblinApp() {
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding),
         ) {
-            composable(JOURNAL_ROUTE) { JournalRoute(scrollToTopTick = journalScrollToTopTick) }
+            composable(JOURNAL_ROUTE) {
+                JournalRoute(
+                    scrollToTopTick = journalScrollToTopTick,
+                    onOpenExercise = { name -> navController.navigate(exerciseProgressRoute(name)) },
+                )
+            }
             composable(EXERCISES_ROUTE) {
                 ExercisesRoute(
                     onExerciseClick = { name ->

@@ -1,7 +1,5 @@
 package com.readyplayerai.gainsgoblin.ui.compose.journal
 
-import android.widget.Toast
-import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -51,9 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.readyplayerai.gainsgoblin.R
 import com.readyplayerai.gainsgoblin.model.WorkoutExercise
-import com.readyplayerai.gainsgoblin.model.WorkoutSet
 import com.readyplayerai.gainsgoblin.ui.JournalUiState
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.ParseException
@@ -89,6 +84,7 @@ fun JournalScreen(
     onSetNote: (date: String, exerciseName: String, setIndex: Int, note: String?) -> Unit,
     onExerciseNote: (date: String, exerciseName: String, note: String?) -> Unit,
     onAddExercise: (name: String, category: String, onResult: (Boolean) -> Unit) -> Unit,
+    onOpenExerciseStats: (String) -> Unit,
 ) {
     if (!uiState.loaded || uiState.infiniteDays.isEmpty()) {
         Surface(
@@ -155,13 +151,11 @@ fun JournalScreen(
     val scope = rememberCoroutineScope()
 
     var showDatePicker by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     var expanded by remember { mutableStateOf<ExerciseKey?>(null) }
-    var composer by remember { mutableStateOf(JournalComposerState()) }
     var noteText by remember { mutableStateOf("") }
     var setActions by remember { mutableStateOf<JournalSetTarget?>(null) }
     var scrollToKey by remember { mutableStateOf<ExerciseKey?>(null) }
-    var draft by remember { mutableStateOf<JournalDraft?>(null) }
+    var logTarget by remember { mutableStateOf<JournalLogTarget?>(null) }
     var showPicker by remember { mutableStateOf(false) }
     var showNewExercise by remember { mutableStateOf(false) }
     var newExerciseSeed by remember { mutableStateOf("") }
@@ -173,31 +167,15 @@ fun JournalScreen(
         uiState.realDays.associate { it.Date to findJournalPr(it.Exercises.orEmpty()) }
     }
 
-    fun effectiveDraft(date: String?): JournalDraft? {
-        val d = draft ?: return null
-        if (d.date != date) return null
-        val alreadyReal = realDaysByDate[date]?.Exercises?.any { it.Exercise == d.name } == true
-        return if (alreadyReal) null else d
-    }
-
     // Maps each day index to the index of its sticky header in the LazyColumn. A day adds one
-    // item for its header, plus one item per exercise on training days, plus one for a draft.
-    val dayStartIndices = remember(uiState.infiniteDays, uiState.realDays, draft) {
+    // item for its header, plus one item per exercise on training days.
+    val dayStartIndices = remember(uiState.infiniteDays, uiState.realDays) {
         val indices = IntArray(uiState.infiniteDays.size)
         var itemIndex = 0
         uiState.infiniteDays.forEachIndexed { index, day ->
             indices[index] = itemIndex
             itemIndex += 1 // sticky day header
-            val realExercises = realDaysByDate[day.Date]?.Exercises
-            if (!realExercises.isNullOrEmpty()) {
-                itemIndex += realExercises.size
-            }
-            if (draft != null &&
-                draft?.date == day.Date &&
-                realExercises?.any { it.Exercise == draft?.name } != true
-            ) {
-                itemIndex += 1 // draft card
-            }
+            itemIndex += realDaysByDate[day.Date]?.Exercises?.size ?: 0
         }
         indices
     }
@@ -233,27 +211,32 @@ fun JournalScreen(
         }
     }
 
-    fun initialComposer(name: String, exercise: WorkoutExercise?): JournalComposerState {
+    fun prefill(name: String, exercise: WorkoutExercise?): Pair<Double?, Double?> {
         val last = exercise?.Sets?.lastOrNull()
-        val fallback = lastPerformed(uiState.realDays, name)
-        val weight = last?.weight ?: fallback?.set?.weight
-        val reps = last?.reps ?: fallback?.set?.reps
-        val source = when {
-            !exercise?.Sets.isNullOrEmpty() -> context.getString(
-                R.string.journal_set_from,
-                exercise?.Sets?.size ?: 0,
-            )
-            fallback != null -> context.getString(
-                R.string.journal_last_trained,
-                formatWeightValue(fallback.set.weight),
-                formatRepsValue(fallback.set.reps),
-            )
-            else -> ""
+        val fallback = lastPerformed(uiState.realDays, name)?.set
+        return (last?.weight ?: fallback?.weight) to (last?.reps ?: fallback?.reps)
+    }
+
+    fun openLog(
+        date: String,
+        name: String,
+        category: String?,
+        exercise: WorkoutExercise?,
+        setIndex: Int? = null,
+    ) {
+        val (weight, reps) = if (setIndex != null) {
+            val set = exercise?.Sets?.getOrNull(setIndex)
+            set?.weight to set?.reps
+        } else {
+            prefill(name, exercise)
         }
-        return JournalComposerState(
-            weight = formatWeightValue(weight),
-            reps = formatRepsValue(reps),
-            sourceLabel = source,
+        logTarget = JournalLogTarget(
+            date = date,
+            exerciseName = name,
+            category = category,
+            setIndex = setIndex,
+            weight = weight,
+            reps = reps,
         )
     }
 
@@ -261,86 +244,18 @@ fun JournalScreen(
         saveOpenNoteIfChanged()
         expanded = ExerciseKey(date, name)
         noteText = exercise?.Comment.orEmpty()
-        composer = initialComposer(name, exercise)
     }
 
     fun collapseExpanded() {
         if (expanded == null) return
         saveOpenNoteIfChanged()
         expanded = null
-        composer = JournalComposerState()
         noteText = ""
     }
 
-    fun toggleCard(date: String, name: String, exercise: WorkoutExercise?) {
+    fun toggleExpanded(date: String, name: String, exercise: WorkoutExercise?) {
         val key = ExerciseKey(date, name)
         if (expanded == key) collapseExpanded() else beginExpand(date, name, exercise)
-    }
-
-    fun startEdit(index: Int, set: WorkoutSet) {
-        composer = JournalComposerState(
-            weight = formatWeightValue(set.weight),
-            reps = formatRepsValue(set.reps),
-            editingSetIndex = index,
-            originalWeight = set.weight,
-            originalReps = set.reps,
-            sourceLabel = "",
-        )
-    }
-
-    fun cancelEdit(exercise: WorkoutExercise?) {
-        val key = expanded ?: return
-        composer = initialComposer(key.name, exercise)
-    }
-
-    fun stepWeight(delta: Int) {
-        val current = composer.weight.toDoubleOrNull() ?: 0.0
-        composer = composer.copy(weight = formatWeightValue((current + delta).coerceAtLeast(0.0)))
-    }
-
-    fun stepReps(delta: Int) {
-        val current = composer.reps.toDoubleOrNull() ?: 0.0
-        composer = composer.copy(reps = (current.roundToInt() + delta).coerceAtLeast(0).toString())
-    }
-
-    fun toast(@StringRes resId: Int) {
-        Toast.makeText(context, resId, Toast.LENGTH_SHORT).show()
-    }
-
-    fun logSet(
-        date: String,
-        name: String,
-        category: String?,
-        exercise: WorkoutExercise?,
-    ) {
-        val weightText = composer.weight
-        val repsText = composer.reps
-        if (weightText.isBlank() || repsText.isBlank()) {
-            toast(R.string.add_exercise_empty_inputs)
-            return
-        }
-        val weight = weightText.toDoubleOrNull()
-        val reps = repsText.toDoubleOrNull()
-        if (weight == null || reps == null || weight <= 0.0 || reps <= 0.0) {
-            toast(R.string.add_exercise_invalid_inputs)
-            return
-        }
-        val editingIndex = composer.editingSetIndex
-        if (editingIndex != null) {
-            onUpdateSet(date, name, editingIndex, weight, reps)
-            composer = composer.copy(
-                editingSetIndex = null,
-                originalWeight = null,
-                originalReps = null,
-                sourceLabel = context.getString(R.string.journal_set_from, editingIndex + 1),
-            )
-        } else {
-            onAddSet(date, name, category, reps, weight, noteText.ifBlank { null })
-            val count = (exercise?.Sets?.size ?: 0) + 1
-            composer = composer.copy(
-                sourceLabel = context.getString(R.string.journal_set_from, count),
-            )
-        }
     }
 
     // Persist the selected date whenever the active day changes.
@@ -355,25 +270,16 @@ fun JournalScreen(
         }
     }
 
-    LaunchedEffect(uiState.realDays, draft) {
-        val d = draft ?: return@LaunchedEffect
-        if (realDaysByDate[d.date]?.Exercises?.any { it.Exercise == d.name } == true) {
-            draft = null
-        }
-    }
-
-    LaunchedEffect(uiState.realDays, expanded, draft) {
+    LaunchedEffect(uiState.realDays, expanded) {
         val key = expanded ?: return@LaunchedEffect
         val real = realDaysByDate[key.date]?.Exercises?.any { it.Exercise == key.name } == true
-        val isCurrentDraft = draft != null && draft?.date == key.date && draft?.name == key.name
-        if (!real && !isCurrentDraft) {
+        if (!real) {
             expanded = null
-            composer = JournalComposerState()
             noteText = ""
         }
     }
 
-    LaunchedEffect(scrollToKey, uiState.realDays, draft) {
+    LaunchedEffect(scrollToKey, uiState.realDays) {
         val key = scrollToKey ?: return@LaunchedEffect
         val dayIndex = uiState.infiniteDays.indexOfFirst { it.Date == key.date }
         if (dayIndex < 0) {
@@ -382,12 +288,9 @@ fun JournalScreen(
         }
         val realExercises = realDaysByDate[key.date]?.Exercises.orEmpty()
         val exerciseIndex = realExercises.indexOfFirst { it.Exercise == key.name }
+        if (exerciseIndex < 0) return@LaunchedEffect
         val start = dayStartIndices[dayIndex]
-        val target = if (exerciseIndex >= 0) {
-            start + 1 + exerciseIndex
-        } else {
-            start + 1 + realExercises.size
-        }
+        val target = start + 1 + exerciseIndex
         val offset = with(density) { (-80).dp.roundToPx() }
         listState.animateScrollToItem(target, offset)
         scrollToKey = null
@@ -406,9 +309,24 @@ fun JournalScreen(
             )
         },
         floatingActionButton = {
-            if (expanded == null && activeDay?.Date != null) {
+            val expandedKey = expanded
+            val targetDate = expandedKey?.date ?: activeDay?.Date
+            if (targetDate != null) {
                 ExtendedFloatingActionButton(
-                    onClick = { showPicker = true },
+                    onClick = {
+                        if (expandedKey != null) {
+                            val exercise = realDaysByDate[expandedKey.date]?.Exercises
+                                ?.firstOrNull { it.Exercise == expandedKey.name }
+                            openLog(
+                                expandedKey.date,
+                                expandedKey.name,
+                                categoryFor(expandedKey.name),
+                                exercise,
+                            )
+                        } else {
+                            showPicker = true
+                        }
+                    },
                     icon = {
                         Icon(
                             painter = painterResource(R.drawable.ic_add_24px),
@@ -417,12 +335,12 @@ fun JournalScreen(
                     },
                     text = {
                         Text(
-                            text = if (activeDayIndex == 0) {
-                                stringResource(R.string.journal_add_exercise)
-                            } else {
-                                stringResource(
+                            text = when {
+                                expandedKey != null -> stringResource(R.string.journal_add_set)
+                                activeDayIndex == 0 -> stringResource(R.string.journal_add_exercise)
+                                else -> stringResource(
                                     R.string.journal_add_to_day,
-                                    formatWeekday(activeDay.Date),
+                                    formatWeekday(activeDay?.Date),
                                 )
                             },
                         )
@@ -448,7 +366,6 @@ fun JournalScreen(
                         day = day,
                         realDay = realDay,
                         isToday = index == 0,
-                        draftExerciseCount = if (effectiveDraft(day.Date) != null) 1 else 0,
                     )
                 }
 
@@ -468,14 +385,21 @@ fun JournalScreen(
                             category = categoryFor(exercise.Exercise),
                             pr = prByDate[day.Date],
                             state = if (isExpanded) {
-                                JournalCardState(expanded = true, composer = composer, note = noteText)
+                                JournalCardState(expanded = true, note = noteText)
                             } else {
                                 JournalCardState()
                             },
                             callbacks = JournalCardCallbacks(
-                                onToggle = { toggleCard(date, name, exercise) },
+                                onCardClick = {
+                                    openLog(date, name, categoryFor(exercise.Exercise), exercise)
+                                },
+                                onOpenStats = {
+                                    saveOpenNoteIfChanged()
+                                    onOpenExerciseStats(name)
+                                },
+                                onExpandToggle = { toggleExpanded(date, name, exercise) },
                                 onSetClick = { index ->
-                                    exercise.Sets?.getOrNull(index)?.let { startEdit(index, it) }
+                                    openLog(date, name, categoryFor(exercise.Exercise), exercise, index)
                                 },
                                 onSetMore = { index ->
                                     exercise.Sets?.getOrNull(index)?.let {
@@ -484,12 +408,6 @@ fun JournalScreen(
                                 },
                                 onNoteChange = { noteText = it },
                                 onNoteSave = { saveOpenNoteIfChanged() },
-                                onWeightChange = { composer = composer.copy(weight = it) },
-                                onRepsChange = { composer = composer.copy(reps = it) },
-                                onStepWeight = { stepWeight(it) },
-                                onStepReps = { stepReps(it) },
-                                onLogSet = { logSet(date, name, categoryFor(exercise.Exercise), exercise) },
-                                onCancelEdit = { cancelEdit(exercise) },
                             ),
                             modifier = if (exerciseIndex == 0) {
                                 Modifier.padding(top = 12.dp)
@@ -499,63 +417,47 @@ fun JournalScreen(
                         )
                     }
                 }
-
-                val draftForDay = effectiveDraft(day.Date)
-                if (draftForDay != null) {
-                    item(key = "draft-${draftForDay.date}-${draftForDay.name}") {
-                        val key = ExerciseKey(draftForDay.date, draftForDay.name)
-                        val draftExercise = WorkoutExercise().apply {
-                            Exercise = draftForDay.name
-                            Sets = arrayListOf()
-                            Comment = noteText
-                        }
-                        JournalExerciseCard(
-                            exercise = draftExercise,
-                            category = draftForDay.category,
-                            pr = null,
-                            state = JournalCardState(
-                                expanded = expanded == key,
-                                isDraft = true,
-                                composer = composer,
-                                note = noteText,
-                            ),
-                            callbacks = JournalCardCallbacks(
-                                onToggle = {
-                                    if (expanded == key) {
-                                        draft = null
-                                        expanded = null
-                                        composer = JournalComposerState()
-                                        noteText = ""
-                                    } else {
-                                        beginExpand(draftForDay.date, draftForDay.name, null)
-                                    }
-                                },
-                                onSetClick = {},
-                                onSetMore = {},
-                                onNoteChange = { noteText = it },
-                                onNoteSave = {},
-                                onWeightChange = { composer = composer.copy(weight = it) },
-                                onRepsChange = { composer = composer.copy(reps = it) },
-                                onStepWeight = { stepWeight(it) },
-                                onStepReps = { stepReps(it) },
-                                onLogSet = {
-                                    logSet(
-                                        draftForDay.date,
-                                        draftForDay.name,
-                                        draftForDay.category,
-                                        null,
-                                    )
-                                },
-                                onCancelEdit = {
-                                    composer = initialComposer(draftForDay.name, null)
-                                },
-                            ),
-                            modifier = Modifier.padding(top = 12.dp),
-                        )
-                    }
-                }
             }
         }
+    }
+
+    logTarget?.let { target ->
+        val existingExercise = realDaysByDate[target.date]?.Exercises
+            ?.firstOrNull { it.Exercise == target.exerciseName }
+        LogSetSheet(
+            exerciseName = target.exerciseName,
+            dateLabel = formatFullDate(target.date),
+            initialWeight = target.weight,
+            initialReps = target.reps,
+            editingSetIndex = target.setIndex,
+            initialNote = existingExercise?.Comment,
+            showNoteField = target.setIndex == null,
+            onSave = { weight, reps, note ->
+                if (target.setIndex != null) {
+                    onUpdateSet(target.date, target.exerciseName, target.setIndex, weight, reps)
+                } else {
+                    onAddSet(
+                        target.date,
+                        target.exerciseName,
+                        target.category,
+                        reps,
+                        weight,
+                        note,
+                    )
+                    // The open card's note editor mirrors the exercise note, which is the last set's
+                    // comment — adding a set changes it, so keep the editor in sync and avoid the next
+                    // note save overwriting the note that was just entered.
+                    if (expanded == ExerciseKey(target.date, target.exerciseName)) {
+                        noteText = note.orEmpty()
+                    }
+                    if (existingExercise == null) {
+                        scrollToKey = ExerciseKey(target.date, target.exerciseName)
+                    }
+                }
+                logTarget = null
+            },
+            onDismiss = { logTarget = null },
+        )
     }
 
     setActions?.let { target ->
@@ -564,7 +466,15 @@ fun JournalScreen(
             set = target.set,
             onDismiss = { setActions = null },
             onEdit = {
-                startEdit(target.index, target.set)
+                val exercise = realDaysByDate[target.date]?.Exercises
+                    ?.firstOrNull { it.Exercise == target.exerciseName }
+                openLog(
+                    target.date,
+                    target.exerciseName,
+                    categoryFor(target.exerciseName),
+                    exercise,
+                    target.index,
+                )
                 setActions = null
             },
             onSaveNote = { note ->
@@ -592,9 +502,6 @@ fun JournalScreen(
             realDaysByDate[pickerDate]?.Exercises?.forEach { exercise ->
                 exercise.Exercise?.let { add(it) }
             }
-            if (draft?.date == pickerDate) {
-                draft?.name?.let { add(it) }
-            }
         }
         JournalExercisePicker(
             targetDateLabel = formatFullDate(pickerDate),
@@ -606,29 +513,7 @@ fun JournalScreen(
                 val name = exercise.Name.orEmpty()
                 val existing = realDaysByDate[pickerDate]?.Exercises
                     ?.firstOrNull { it.Exercise == name }
-                val existingDraft = draft?.takeIf {
-                    it.date == pickerDate && it.name == name
-                }
-                when {
-                    existing != null -> {
-                        beginExpand(pickerDate, name, existing)
-                        scrollToKey = ExerciseKey(pickerDate, name)
-                    }
-                    existingDraft != null -> {
-                        beginExpand(pickerDate, name, null)
-                        scrollToKey = ExerciseKey(pickerDate, name)
-                    }
-                    else -> {
-                        draft = JournalDraft(
-                            pickerDate,
-                            name,
-                            exercise.BodyPart.orEmpty(),
-                        )
-                        beginExpand(pickerDate, name, null)
-                        noteText = ""
-                        scrollToKey = ExerciseKey(pickerDate, name)
-                    }
-                }
+                openLog(pickerDate, name, exercise.BodyPart.orEmpty(), existing)
             },
             onCreate = { query ->
                 showPicker = false
@@ -648,10 +533,7 @@ fun JournalScreen(
             },
             onAdded = { name, category ->
                 showNewExercise = false
-                draft = JournalDraft(pickerDate, name, category)
-                beginExpand(pickerDate, name, null)
-                noteText = ""
-                scrollToKey = ExerciseKey(pickerDate, name)
+                openLog(pickerDate, name, category, null)
             },
         )
     }
@@ -674,15 +556,14 @@ fun JournalScreen(
     }
 }
 
-private fun formatWeightValue(value: Double?): String {
-    if (value == null) return ""
-    return if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
-}
-
-private fun formatRepsValue(value: Double?): String {
-    if (value == null) return ""
-    return value.roundToInt().toString()
-}
+private data class JournalLogTarget(
+    val date: String,
+    val exerciseName: String,
+    val category: String?,
+    val setIndex: Int? = null,
+    val weight: Double? = null,
+    val reps: Double? = null,
+)
 
 private fun formatWeekday(date: String?): String = try {
     val parsed = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date ?: "")

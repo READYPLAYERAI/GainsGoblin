@@ -576,7 +576,7 @@ fun ExercisesScreen(
             initialWeight = last?.set?.weight,
             initialReps = last?.set?.reps,
             editingSetIndex = null,
-            onSave = { weight, reps ->
+            onSave = { weight, reps, _ ->
                 onLogSet(name, weight, reps)
                 loggingExercise = null
             },

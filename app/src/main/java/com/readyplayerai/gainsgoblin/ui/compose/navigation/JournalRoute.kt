@@ -21,7 +21,10 @@ import kotlinx.coroutines.launch
 
 /** Journal tab: collects [JournalViewModel] and renders [JournalScreen]. */
 @Composable
-fun JournalRoute(scrollToTopTick: StateFlow<Int>) {
+fun JournalRoute(
+    scrollToTopTick: StateFlow<Int>,
+    onOpenExercise: (String) -> Unit,
+) {
     val viewModel: JournalViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -47,6 +50,7 @@ fun JournalRoute(scrollToTopTick: StateFlow<Int>) {
         categoryFor = { name -> exerciseCategoryFor(uiState.knownExercises, name) },
         onSelectDate = { date -> viewModel.selectDate(date) },
         scrollToTopTick = scrollToTopTick,
+        onOpenExerciseStats = onOpenExercise,
         onExportRawData = {
             rawRecoveryPicker.launch("gainsgoblin_legacy_raw_" + journalTimestamp() + ".txt")
         },

@@ -330,7 +330,7 @@ fun ExerciseProgressScreen(
             initialWeight = target?.weight ?: lastEntry?.weight,
             initialReps = target?.reps ?: lastEntry?.reps,
             editingSetIndex = target?.setIndex,
-            onSave = { weight, reps ->
+            onSave = { weight, reps, _ ->
                 if (target != null) {
                     onUpdateSet(target.date, target.setIndex, weight, reps)
                 } else {
