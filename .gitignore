@@ -46,3 +46,6 @@ notes/
 
 # Local design studies (not part of the app)
 design/
+
+# Local git backup bundles
+*.bundle
